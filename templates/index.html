@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Учет расходов</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; border: 1px solid #ddd; text-align: left; }
+        form { margin: 20px 0; background: #f5f5f5; padding: 15px; border-radius: 5px; }
+        input, select { padding: 8px; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>Мои расходы</h1>
+
+    <!-- Форма добавления расхода -->
+    <form action="/add_expense" method="POST">
+        <h3>Добавить расход</h3>
+
+        <label>Сумма:</label>
+        <input type="number" name="amount" step="0.01" required>
+
+        <label>Категория:</label>
+        <select name="category" required>
+            <option value="Еда">Еда</option>
+            <option value="Транспорт">Транспорт</option>
+            <option value="Жилье">Жилье</option>
+            <option value="Развлечения">Развлечения</option>
+        </select>
+
+        <label>Описание (необязательно):</label>
+        <input type="text" name="description">
+
+        <button type="submit">Добавить</button>
+    </form>
+
+    <!-- Таблица расходов -->
+    <h2>История расходов</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Сумма</th>
+                <th>Категория</th>
+                <th>Описание</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for expense in expenses %}
+            <tr>
+                <td>{{ expense.date }}</td>
+                <td>{{ expense.amount }}</td>
+                <td>{{ expense.name }}</td>  <!-- name - это категория -->
+                <td>{{ expense.description or '' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
