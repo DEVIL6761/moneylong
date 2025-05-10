@@ -11,13 +11,7 @@
     <div class="container">
         <h1><i class="fas fa-wallet"></i> Учет финансов</h1>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash-message {{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+
 
         <div class="transaction-form">
     <h2><i class="fas fa-plus-circle"></i> Добавить операцию</h2>
@@ -67,13 +61,13 @@
 
         <!-- Кнопки действий -->
         <div class="form-actions">
-            <button type="submit" class="form-btn btn-primary">
-                <i class="fas fa-save"></i> Добавить операцию
-            </button>
+                    <button type="submit" class="form-btn btn-primary" id="submitBtn">
+            <i class="fas fa-save"></i> Добавить операцию
+        </button>
 
             <div class="form-buttons-row">
                 <button type="button" class="form-btn btn-secondary" id="historyToggle">
-                    <i class="fas fa-history"></i> История
+                    <i class="fas fa-history"></i> История операций
                 </button>
                 <a href="{{ url_for('analytics') }}" class="form-btn btn-secondary">
                     <i class="fas fa-chart-pie"></i> Аналитика
@@ -84,7 +78,15 @@
 </div>
 
 
-
+            <div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-message {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+</div>
 
 
         <div id="transactionHistory" class="transaction-history">

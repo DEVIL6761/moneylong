@@ -576,3 +576,103 @@ select {
         padding: 10px 40px 10px 12px;
     }
 }
+
+
+
+/* Общие стили для всех кнопок */
+.form-btn, .btn-secondary {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    /* Остальные стили... */
+}
+
+/* Специфичные стили для ссылок-кнопок */
+a.form-btn, a.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    /* Чтобы ссылка вела себя как кнопка */
+    cursor: pointer;
+}
+
+/* Убедитесь, что состояние hover одинаковое */
+a.btn-secondary:hover, button.btn-secondary:hover {
+    background: #4a5660;
+    color: var(--text);
+    text-decoration: none;
+}
+
+
+
+/* Анимации для кнопки */
+@keyframes pulse-success {
+    0% { box-shadow: 0 0 0 0 rgba(0, 184, 148, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(0, 184, 148, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 184, 148, 0); }
+}
+
+@keyframes pulse-error {
+    0% { box-shadow: 0 0 0 0 rgba(214, 48, 49, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(214, 48, 49, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(214, 48, 49, 0); }
+}
+
+.btn-success-pulse {
+    animation: pulse-success 1s;
+    background-color: var(--income) !important;
+}
+
+.btn-error-pulse {
+    animation: pulse-error 1s;
+    background-color: var(--expense) !important;
+}
+
+/* Иконка загрузки */
+.btn-loading::after {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-left: 10px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.chart-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.chart-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+}
+
+.chart-total {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    color: var(--text);
+}
+
+.chart-wrapper h3 {
+    text-align: center;
+    color: var(--secondary);
+    margin-bottom: 15px;
+}

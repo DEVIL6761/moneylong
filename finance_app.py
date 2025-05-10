@@ -49,13 +49,14 @@ class FinanceApp:
         finally:
             conn.close()
 
-
     def get_transactions(self, period='all', trans_type=None):
         """Возвращает список операций"""
         conn = self._get_connection()
 
         query = '''
-        SELECT t.amount, c.name, t.date, t.description, t.type 
+        SELECT t.amount, c.name, 
+               date(t.date) as date,  -- Берем только дату
+               t.description, t.type 
         FROM transactions t 
         JOIN categories c ON t.category_id = c.id
         '''
@@ -123,21 +124,37 @@ class FinanceApp:
         }
         return stats
 
-    def show_plot(self, period='month'):
-        expenses = self.get_expenses(period)
-        if expenses.empty:
+    def show_plot(self, period='month', trans_type='expense'):
+        """Отображает кольцевую диаграмму с суммой в центре"""
+        transactions = self.get_transactions(period=period, trans_type=trans_type)
+
+        if transactions.empty:
             print("Нет данных для отображения")
             return
 
-        # График по категориям
-        by_category = expenses.groupby('name')['amount'].sum()
-        by_category.plot.pie(title=f'Расходы по категориям ({period})', autopct='%1.1f%%')
-        plt.show()
+        plt.figure(figsize=(8, 8))
 
-        # График по дням
-        expenses['day'] = expenses['date'].str[:10]
-        by_day = expenses.groupby('day')['amount'].sum()
-        by_day.plot.bar(title=f'Расходы по дням ({period})')
+        # Подготовка данных
+        by_category = transactions.groupby('name')['amount'].sum()
+        total = by_category.sum()
+
+        # Создание кольцевой диаграммы
+        wedges, texts, autotexts = plt.pie(
+            by_category,
+            labels=by_category.index,
+            autopct='%1.1f%%',
+            startangle=90,
+            wedgeprops={'width': 0.4, 'edgecolor': 'w'},  # Делаем кольцо
+            pctdistance=0.85
+        )
+
+        # Добавляем общую сумму в центр
+        centre_circle = plt.Circle((0, 0), 0.3, color='white')
+        plt.gca().add_artist(centre_circle)
+        plt.text(0, 0.1, f"Всего:\n{total:.2f} ₽",
+                 ha='center', va='center', fontsize=12)
+
+        plt.title(f"{'Доходы' if trans_type == 'income' else 'Расходы'} ({period})")
         plt.show()
 
     def get_expense_stats(self):
