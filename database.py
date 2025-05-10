@@ -1,38 +1,41 @@
 import sqlite3
-from datetime import datetime
 
 
 def init_db():
     conn = sqlite3.connect('finance.db')
     cursor = conn.cursor()
 
-    # Таблица категорий расходов
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE
+        name TEXT NOT NULL UNIQUE,
+        type TEXT NOT NULL CHECK(type IN ('expense', 'income'))
     )
     ''')
 
-    # Таблица расходов
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS expenses (
+    CREATE TABLE IF NOT EXISTS transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         amount REAL NOT NULL,
         category_id INTEGER NOT NULL,
         date TEXT NOT NULL,
         description TEXT,
+        type TEXT NOT NULL CHECK(type IN ('expense', 'income')),
         FOREIGN KEY (category_id) REFERENCES categories (id)
     )
     ''')
 
-    # Стандартные категории
-    default_categories = ['Еда', 'Транспорт', 'Жилье', 'Развлечения', 'Здоровье']
-    for category in default_categories:
+    default_categories = [
+        ('Еда', 'expense'),
+        ('Транспорт', 'expense'),
+        ('Зарплата', 'income')
+    ]
+
+    for name, type in default_categories:
         try:
-            cursor.execute('INSERT INTO categories (name) VALUES (?)', (category,))
+            cursor.execute('INSERT INTO categories (name, type) VALUES (?, ?)', (name, type))
         except sqlite3.IntegrityError:
-            pass  # категория уже существует
+            pass
 
     conn.commit()
     conn.close()

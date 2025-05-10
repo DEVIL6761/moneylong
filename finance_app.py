@@ -11,49 +11,105 @@ class FinanceApp:
     def _get_connection(self):
         return sqlite3.connect(self.db_name)
 
-    def add_expense(self, amount, category_name, description=None):
-        date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        conn = self._get_connection()
-        cursor = conn.cursor()
-
-        # Получаем или создаем категорию
-        cursor.execute('SELECT id FROM categories WHERE name = ?', (category_name,))
-        category = cursor.fetchone()
-
-        if not category:
-            cursor.execute('INSERT INTO categories (name) VALUES (?)', (category_name,))
-            category_id = cursor.lastrowid
-        else:
-            category_id = category[0]
-
-        # Добавляем расход
-        cursor.execute('''
-        INSERT INTO expenses (amount, category_id, date, description)
-        VALUES (?, ?, ?, ?)
-        ''', (amount, category_id, date, description))
-
-        conn.commit()
-        conn.close()
-        return True
-
-    def get_expenses(self, period='month'):
-        conn = self._get_connection()
-
-        # Определяем период для фильтрации
-        now = datetime.now()
-        if period == 'day':
-            date_filter = now.strftime('%Y-%m-%d')
-            query = "SELECT e.amount, c.name, e.date, e.description FROM expenses e JOIN categories c ON e.category_id = c.id WHERE date(e.date) = date(?) ORDER BY e.date DESC"
-        elif period == 'week':
-            query = "SELECT e.amount, c.name, e.date, e.description FROM expenses e JOIN categories c ON e.category_id = c.id WHERE date(e.date) >= date('now', '-7 days') ORDER BY e.date DESC"
-        elif period == 'month':
-            query = "SELECT e.amount, c.name, e.date, e.description FROM expenses e JOIN categories c ON e.category_id = c.id WHERE strftime('%Y-%m', e.date) = strftime('%Y-%m', 'now') ORDER BY e.date DESC"
-        else:  # all
-            query = "SELECT e.amount, c.name, e.date, e.description FROM expenses e JOIN categories c ON e.category_id = c.id ORDER BY e.date DESC"
-
-        df = pd.read_sql(query, conn, params=(date_filter,) if period == 'day' else None)
+    def get_transactions(self):
+        conn = sqlite3.connect(self.db_name)
+        df = pd.read_sql('SELECT * FROM transactions', conn)
         conn.close()
         return df
+
+    def add_transaction(self, amount, category_name, trans_type, date=None, description=None):
+        """Добавляет новую транзакцию"""
+        conn = self._get_connection()
+        try:
+            # Получаем ID категории по имени
+            cursor = conn.cursor()
+            cursor.execute('SELECT id FROM categories WHERE name = ?', (category_name,))
+            category_id = cursor.fetchone()
+
+            if not category_id:
+                raise ValueError(f"Категория '{category_name}' не найдена")
+
+            # Если дата не указана, используем текущую
+            if date is None:
+                date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            elif isinstance(date, datetime):
+                date = date.strftime('%Y-%m-%d %H:%M:%S')
+
+            # Вставляем транзакцию
+            cursor.execute('''
+                INSERT INTO transactions (amount, category_id, date, description, type)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (amount, category_id[0], date, description, trans_type))
+
+            conn.commit()
+            return True
+        except Exception as e:
+            conn.rollback()
+            raise e
+        finally:
+            conn.close()
+
+
+    def get_transactions(self, period='all', trans_type=None):
+        """Возвращает список операций"""
+        conn = self._get_connection()
+
+        query = '''
+        SELECT t.amount, c.name, t.date, t.description, t.type 
+        FROM transactions t 
+        JOIN categories c ON t.category_id = c.id
+        '''
+
+        params = []
+        conditions = []
+
+        if trans_type:
+            conditions.append('t.type = ?')
+            params.append(trans_type)
+
+        if period != 'all':
+            if period == 'day':
+                conditions.append("date(t.date) = date('now')")
+            elif period == 'week':
+                conditions.append("date(t.date) >= date('now', '-7 days')")
+            elif period == 'month':
+                conditions.append("strftime('%Y-%m', t.date) = strftime('%Y-%m', 'now')")
+
+        if conditions:
+            query += ' WHERE ' + ' AND '.join(conditions)
+
+        query += ' ORDER BY t.date DESC'
+
+        df = pd.read_sql(query, conn, params=params if params else None)
+        conn.close()
+        return df
+
+    def get_categories(self, trans_type=None):
+        """Возвращает список категорий"""
+        conn = self._get_connection()
+
+        if trans_type:
+            query = 'SELECT name FROM categories WHERE type = ?'
+            categories = pd.read_sql(query, conn, params=(trans_type,))
+        else:
+            query = 'SELECT name, type FROM categories'
+            categories = pd.read_sql(query, conn)
+
+        conn.close()
+        return categories
+
+    def add_category(self, name, trans_type):
+        """Добавляет новую категорию"""
+        conn = self._get_connection()
+        try:
+            conn.execute('INSERT INTO categories (name, type) VALUES (?, ?)',
+                         (name, trans_type))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+        finally:
+            conn.close()
 
     def get_statistics(self, period='month'):
         expenses = self.get_expenses(period)
@@ -84,20 +140,39 @@ class FinanceApp:
         by_day.plot.bar(title=f'Расходы по дням ({period})')
         plt.show()
 
+    def get_expense_stats(self):
+        """Возвращает статистику по расходам"""
+        conn = self._get_connection()
+        query = '''
+        SELECT c.name, SUM(t.amount) as total 
+        FROM transactions t
+        JOIN categories c ON t.category_id = c.id
+        WHERE t.type = 'expense'
+        GROUP BY c.name
+        ORDER BY total DESC
+        '''
+        df = pd.read_sql(query, conn)
+        conn.close()
+        return df.to_dict('records')
+
+    def get_income_stats(self):
+        """Возвращает статистику по доходам"""
+        conn = self._get_connection()
+        query = '''
+        SELECT c.name, SUM(t.amount) as total 
+        FROM transactions t
+        JOIN categories c ON t.category_id = c.id
+        WHERE t.type = 'income'
+        GROUP BY c.name
+        ORDER BY total DESC
+        '''
+        df = pd.read_sql(query, conn)
+        conn.close()
+        return df.to_dict('records')
+
 
 # Пример использования
 if __name__ == '__main__':
     app = FinanceApp()
 
-    # Добавление тестовых данных
-    app.add_expense(1500, 'Еда', 'Продукты на неделю')
-    app.add_expense(300, 'Транспорт', 'Такси')
-    app.add_expense(2500, 'Жилье', 'Аренда')
 
-    # Получение статистики
-    print("Статистика за месяц:")
-    stats = app.get_statistics('month')
-    print(stats)
-
-    # Визуализация
-    app.show_plot('month')

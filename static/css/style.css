@@ -1,0 +1,578 @@
+:root {
+    --primary: #6c5ce7;
+    --secondary: #a29bfe;
+    --dark: #1e272e;
+    --light-dark: #2d3436;
+    --text: #dfe6e9;
+    --income: #00b894;
+    --expense: #d63031;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--dark);
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1, h2 {
+    color: var(--secondary);
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.transaction-form {
+    background: var(--light-dark);
+    padding: 25px;
+    margin-bottom: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--secondary);
+    font-weight: 500;
+}
+
+input, select, button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background: #3d484f;
+    color: var(--text);
+}
+
+button {
+    background: var(--primary);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+button:hover {
+    background: var(--secondary);
+    transform: translateY(-2px);
+}
+
+.transaction-history {
+    display: none;
+    margin-top: 30px;
+    animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+
+
+.category-selector {
+    position: relative;
+}
+
+.new-category-input {
+    display: none;
+    margin-top: 10px;
+    gap: 10px;
+    grid-template-columns: 2fr 1fr;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 30px;
+    background: var(--light-dark);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #3d484f;
+}
+
+th {
+    background: var(--primary);
+    color: white;
+}
+
+tr:hover {
+    background: #3d484f;
+}
+
+.income {
+    color: var(--income);
+    font-weight: bold;
+}
+
+.expense {
+    color: var(--expense);
+    font-weight: bold;
+}
+
+.flash-message {
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.success {
+    background: rgba(0, 184, 148, 0.2);
+    border-left: 4px solid var(--income);
+}
+
+.danger {
+    background: rgba(214, 48, 49, 0.2);
+    border-left: 4px solid var(--expense);
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    .transaction-form {
+        padding: 15px;
+    }
+
+    th, td {
+        padding: 8px 10px;
+        font-size: 14px;
+    }
+
+    .new-category-input {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+
+
+/* Стили для аналитики */
+.analytics-container {
+    padding: 20px;
+}
+
+.analytics-section {
+    background: var(--light-dark);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.chart-container {
+    position: relative;
+    height: 400px;
+    width: 100%;
+}
+
+.recent-transactions {
+    margin-top: 20px;
+}
+
+.btn.analytics-btn {
+    background: #8e44ad;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn.analytics-btn:hover {
+    background: #9b59b6;
+}
+
+
+
+/* Стили для навигации */
+.navbar {
+    background: var(--light-dark);
+    padding: 15px 0;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-logo {
+    color: var(--secondary);
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.nav-links {
+    display: flex;
+    gap: 20px;
+}
+
+.nav-link {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.nav-link:hover {
+    color: var(--secondary);
+}
+
+.nav-link i {
+    margin-right: 5px;
+}
+
+
+
+
+
+
+
+/* Общий контейнер для формы и кнопок */
+.form-container {
+    width: 100%;
+    max-width: 500px; /* Такая же ширина как у формы */
+    margin: 0 auto;
+}
+
+/* Стиль для кнопок действий */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+/* Общий стиль для формы и кнопок */
+.transaction-form, .show-btn {
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 8px;
+    padding: 12px 15px;
+}
+
+/* Стиль кнопок */
+.show-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    text-align: center;
+}
+
+.show-btn:hover {
+    background: var(--secondary);
+    transform: translateY(-2px);
+}
+
+/* Стиль формы */
+.transaction-form {
+    background: var(--light-dark);
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+
+
+
+/* Стили для формы */
+.transaction-form {
+    background: var(--light-dark);
+    padding: 25px;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Контейнер для кнопок формы */
+.form-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+/* Основной стиль кнопок */
+.form-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    text-align: center;
+}
+
+/* Основная кнопка добавления */
+.form-btn.primary {
+    background: var(--primary);
+    color: white;
+}
+
+.form-btn.primary:hover {
+    background: var(--secondary);
+}
+
+/* Вторичные кнопки */
+.form-btn:not(.primary) {
+    background: #3d484f;
+    color: var(--text);
+    border: 1px solid #4a5660;
+}
+
+.form-btn:not(.primary):hover {
+    background: #4a5660;
+}
+
+/* Группа кнопок */
+.action-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.action-buttons .form-btn {
+    flex: 1; /* Равномерное распределение ширины */
+}
+
+
+
+/* Общие стили кнопок */
+.form-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    text-align: center;
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+
+/* Основная кнопка */
+.btn-primary {
+    background: var(--primary);
+    color: white;
+    min-height: 44px;
+}
+
+.btn-primary:hover {
+    background: var(--secondary);
+}
+
+/* Вторичные кнопки */
+.btn-secondary {
+    background: #3d484f;
+    color: var(--text);
+    border: 1px solid #4a5660;
+    min-height: 44px;
+}
+
+.btn-secondary:hover {
+    background: #4a5660;
+}
+
+/* Расположение кнопок */
+.form-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.form-buttons-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+
+/* Общие стили для всех элементов формы */
+.form-input,
+.form-btn,
+select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+    border: 1px solid #4a5660;
+    background: #3d484f;
+    color: var(--text);
+    transition: all 0.3s;
+}
+
+/* Специфичные стили для полей ввода */
+.form-input {
+    min-height: 44px;
+}
+
+/* Стили для селектов */
+select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23dfe6e9'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+}
+
+/* Группировка полей */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Адаптивность */
+@media (max-width: 600px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .form-input,
+    .form-btn,
+    select {
+        padding: 10px 12px;
+    }
+}
+
+
+
+/* Стили для кастомного селекта */
+.custom-select {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select select {
+    appearance: none;
+    width: 100%;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #4a5660;
+    background: #3d484f;
+    color: var(--text);
+    cursor: pointer;
+    padding-right: 40px; /* Место для стрелки */
+}
+
+.select-arrow {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--text);
+}
+
+/* Стили при фокусе */
+.custom-select select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.3);
+}
+
+/* Стили для опций */
+.custom-select select option {
+    background: #2d3436;
+    color: var(--text);
+    padding: 10px;
+}
+.custom-select select.has-value {
+    color: var(--text);
+    border-color: var(--primary);
+}
+
+
+/* Основные стили селекта */
+.custom-select {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select select {
+    appearance: none;
+    width: 100%;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #4a5660;
+    background: #3d484f;
+    color: var(--text);
+    cursor: pointer;
+    padding-right: 40px;
+}
+
+/* Стрелка вниз */
+.select-arrow {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--text);
+}
+
+/* Принудительное открытие вниз */
+.custom-select select option {
+    position: static;
+    transform: none;
+}
+
+/* Для мобильных устройств */
+@media (max-width: 600px) {
+    .custom-select select {
+        padding: 10px 40px 10px 12px;
+    }
+}
