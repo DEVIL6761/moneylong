@@ -50,16 +50,15 @@ class FinanceApp:
             conn.close()
 
     def get_transactions(self, period='all', trans_type=None):
-        """Возвращает список операций"""
         conn = self._get_connection()
-
         query = '''
-        SELECT t.amount, c.name, 
-               date(t.date) as date,  -- Берем только дату
+        SELECT t.id, t.amount, c.name, 
+               date(t.date) as date,
                t.description, t.type 
         FROM transactions t 
         JOIN categories c ON t.category_id = c.id
         '''
+        # ... остальной код ...
 
         params = []
         conditions = []
@@ -187,6 +186,35 @@ class FinanceApp:
         conn.close()
         return df.to_dict('records')
 
+    def update_transaction(self, transaction_id, amount, category_name, trans_type, date=None, description=None):
+        """Обновляет существующую транзакцию"""
+        conn = self._get_connection()
+        try:
+            # Получаем ID категории
+            cursor = conn.cursor()
+            cursor.execute('SELECT id FROM categories WHERE name = ?', (category_name,))
+            category_id = cursor.fetchone()
+
+            if not category_id:
+                raise ValueError(f"Категория '{category_name}' не найдена")
+
+            # Форматируем дату
+            date_str = date.strftime('%Y-%m-%d %H:%M:%S') if date else None
+
+            # Обновляем транзакцию
+            cursor.execute('''
+                UPDATE transactions 
+                SET amount = ?, category_id = ?, type = ?, date = ?, description = ?
+                WHERE id = ?
+            ''', (amount, category_id[0], trans_type, date_str, description, transaction_id))
+
+            conn.commit()
+            return True
+        except Exception as e:
+            conn.rollback()
+            raise e
+        finally:
+            conn.close()
 
 # Пример использования
 if __name__ == '__main__':

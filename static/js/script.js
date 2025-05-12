@@ -136,4 +136,36 @@ function createDoughnutChart(chartId, data) {
             }
         }
     });
+
 }
+
+// Обработчик удаления операции
+document.addEventListener('click', async function(e) {
+    if (e.target.closest('.delete-btn')) {
+        const id = e.target.closest('.delete-btn').dataset.id;
+        if (confirm('Вы уверены, что хотите удалить эту операцию?')) {
+            try {
+                const response = await fetch(`/delete_transaction/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    e.target.closest('tr').remove();
+                    location.reload(); // Обновляем страницу для обновления аналитики
+                } else {
+                    alert('Ошибка при удалении операции');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    }
+});
+
+// Обработчик редактирования операции
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.edit-btn')) {
+        const id = e.target.closest('.edit-btn').dataset.id;
+        window.location.href = `/edit_transaction/${id}`;
+    }
+});

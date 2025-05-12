@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1><i class="fas fa-edit"></i> Редактирование операции</h1>
+
+    <div class="transaction-form">
+        <form action="{{ url_for('edit_transaction', transaction_id=transaction[0]) }}" method="POST">
+            <div class="form-fields">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Тип:</label>
+                        <div class="custom-select">
+                            <select name="type" required class="form-input">
+                                <option> value="income" {% if transaction[2] == 'income' %}selected{% endif %}>Доход</option>
+                                <option> value="expense" {% if transaction[2] == 'expense' %}selected{% endif %}>Расход</option>
+                            </select>
+                            <span class="select-arrow"><i class="fas fa-chevron-down"></i></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Сумма (BYN):</label>
+                        <input type="text" name="amount" value="{{ transaction[1] }}" class="form-input" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Категория:</label>
+                    <div class="custom-select">
+                        <select name="category" required class="form-input">
+                            <option value="" disabled>Выберите категорию</option>
+                            {% for cat in categories %}
+                            <option> value="{{ cat['name'] }}" {% if cat['name'] == transaction[5] %}selected{% endif %}>
+                                {{ cat['name'] }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="select-arrow"><i class="fas fa-chevron-down"></i></span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Дата:</label>
+                        <input type="date" name="date" value="{{ transaction[4] }}" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Описание:</label>
+                        <input type="text" name="description" value="{{ transaction[3] or '' }}" class="form-input">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="form-btn btn-primary">
+                    <i class="fas fa-save"></i> Сохранить
+                </button>
+                <a href="{{ url_for('home') }}" class="form-btn btn-secondary">
+                    <i class="fas fa-times"></i> Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

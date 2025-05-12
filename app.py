@@ -1,26 +1,32 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import datetime
 from database import init_db
-from finance_app import FinanceApp  # Импорт класса
+from finance_app import FinanceApp
+import sqlite3
+import os
 
-
-
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 app.secret_key = 'your-secret-key-123'
-finance_app = FinanceApp()  # Создаём экземпляр здесь
+finance_app = FinanceApp()
 
 # Инициализация БД
 init_db()
 
+# Путь к базе данных
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, 'finance.db')
+
+
 @app.route('/')
 def home():
     try:
+        # Преобразуем DataFrame в словари с ID
         transactions = finance_app.get_transactions().to_dict('records')
-        categories = finance_app.get_categories().to_dict('records')
+        # Проверка данных (для дебага)
+        print(transactions[0])  # Посмотрите в консоли Flask, есть ли там 'id'
         return render_template('index.html',
                             transactions=transactions,
-                            finance_app=finance_app,
-                            categories=categories)
+                            categories=finance_app.get_categories().to_dict('records'))
     except Exception as e:
         return f"Ошибка: {str(e)}", 500
 
@@ -28,14 +34,11 @@ def home():
 @app.route('/add_transaction', methods=['POST'])
 def add_transaction_route():
     try:
-        # Преобразуем строку в float, заменяя запятые на точки
         amount = float(request.form['amount'].replace(',', '.'))
-        # Остальной код без изменений...
         trans_type = request.form['type']
         description = request.form.get('description', '')
         date_str = request.form.get('date')
 
-        # Обработка новой категории
         if request.form['category'] == '__new__':
             category = request.form['new_category']
             category_type = request.form['new_category_type']
@@ -45,7 +48,6 @@ def add_transaction_route():
         else:
             category = request.form['category']
 
-        # Остальная логика добавления транзакции
         date_obj = datetime.strptime(date_str, '%Y-%m-%d') if date_str else None
 
         finance_app.add_transaction(
@@ -64,7 +66,7 @@ def add_transaction_route():
 
 
 @app.route('/add_category', methods=['POST'])
-def add_category_route():  # Изменили имя функции
+def add_category_route():
     try:
         name = request.form['name']
         trans_type = request.form['type']
@@ -81,11 +83,9 @@ def add_category_route():  # Изменили имя функции
 @app.route('/analytics')
 def analytics():
     try:
-        # Получаем данные для аналитики
         expenses = finance_app.get_transactions(trans_type='expense')
         incomes = finance_app.get_transactions(trans_type='income')
 
-        # Готовим данные для графиков
         expense_stats = finance_app.get_expense_stats()
         income_stats = finance_app.get_income_stats()
 
@@ -98,5 +98,68 @@ def analytics():
         flash(f'Ошибка при загрузке аналитики: {str(e)}', 'danger')
         return redirect(url_for('home'))
 
+
+@app.route('/delete_transaction/<int:transaction_id>', methods=['DELETE'])
+def delete_transaction(transaction_id):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM transactions WHERE id = ?', (transaction_id,))
+        conn.commit()
+        return '', 200
+    except Exception as e:
+        return str(e), 500
+    finally:
+        conn.close()
+
+
+@app.route('/edit_transaction/<int:transaction_id>', methods=['GET', 'POST'])
+def edit_transaction(transaction_id):
+    if request.method == 'GET':
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT t.id, t.amount, t.type, t.description, t.date, c.name 
+                FROM transactions t 
+                JOIN categories c ON t.category_id = c.id 
+                WHERE t.id = ?
+            ''', (transaction_id,))
+            transaction = cursor.fetchone()
+
+            if not transaction:
+                flash('Операция не найдена', 'danger')
+                return redirect(url_for('home'))
+
+            return render_template('edit_transaction.html',
+                                   transaction=transaction,
+                                   categories=finance_app.get_categories().to_dict('records'))
+        finally:
+            conn.close()
+
+    elif request.method == 'POST':
+        try:
+            amount = float(request.form['amount'].replace(',', '.'))
+            trans_type = request.form['type']
+            description = request.form.get('description', '')
+            date_str = request.form.get('date')
+            category_name = request.form['category']
+
+            finance_app.update_transaction(
+                transaction_id=transaction_id,
+                amount=amount,
+                category_name=category_name,
+                trans_type=trans_type,
+                date=datetime.strptime(date_str, '%Y-%m-%d') if date_str else None,
+                description=description
+            )
+
+            flash('Операция успешно обновлена', 'success')
+            return redirect(url_for('home'))
+        except Exception as e:
+            flash(f'Ошибка: {str(e)}', 'danger')
+            return redirect(url_for('edit_transaction', transaction_id=transaction_id))
+
+
 if __name__ == '__main__':
-    app.run(debug=True)  # Добавьте debug=True
+    app.run(debug=True)
