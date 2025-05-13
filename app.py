@@ -1,9 +1,14 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
-from datetime import datetime
+
 from database import init_db
 from finance_app import FinanceApp
 import sqlite3
 import os
+from flask import render_template, request, jsonify
+from datetime import datetime
+import pandas as pd
+
+
 
 app = Flask(__name__, template_folder='templates')
 app.secret_key = 'your-secret-key-123'
@@ -82,21 +87,23 @@ def add_category_route():
 
 @app.route('/analytics')
 def analytics():
-    try:
-        expenses = finance_app.get_transactions(trans_type='expense')
-        incomes = finance_app.get_transactions(trans_type='income')
+    selected_month = request.args.get('month') or datetime.now().strftime('%Y-%m')
 
-        expense_stats = finance_app.get_expense_stats()
-        income_stats = finance_app.get_income_stats()
+    daily_stats = finance_app.get_daily_stats(month=selected_month)
+    expense_stats = finance_app.get_expense_stats()
+    income_stats = finance_app.get_income_stats()
 
-        return render_template('analytics.html',
-                               expenses=expenses.to_dict('records'),
-                               incomes=incomes.to_dict('records'),
-                               expense_stats=expense_stats,
-                               income_stats=income_stats)
-    except Exception as e:
-        flash(f'Ошибка при загрузке аналитики: {str(e)}', 'danger')
-        return redirect(url_for('home'))
+    # Все уникальные месяцы в базе
+    df = finance_app.get_transactions()
+    df['month'] = pd.to_datetime(df['date']).dt.strftime('%Y-%m')
+    months = sorted(df['month'].unique(), reverse=True)
+
+    return render_template('analytics.html',
+                           daily_stats=daily_stats,
+                           expense_stats=expense_stats,
+                           income_stats=income_stats,
+                           selected_month=selected_month,
+                           months=months)
 
 
 @app.route('/delete_transaction/<int:transaction_id>', methods=['DELETE'])

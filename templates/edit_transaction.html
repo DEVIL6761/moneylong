@@ -5,15 +5,18 @@
     <h1><i class="fas fa-edit"></i> Редактирование операции</h1>
 
     <div class="transaction-form">
-        <form action="{{ url_for('edit_transaction', transaction_id=transaction[0]) }}" method="POST">
+        <form
+            action="{% if transaction[0] %}{{ url_for('edit_transaction', transaction_id=transaction[0]) }}{% else %}{{ url_for('home') }}{% endif %}"
+            method="POST"
+        >
             <div class="form-fields">
                 <div class="form-row">
                     <div class="form-group">
                         <label>Тип:</label>
                         <div class="custom-select">
                             <select name="type" required class="form-input">
-                                <option> value="income" {% if transaction[2] == 'income' %}selected{% endif %}>Доход</option>
-                                <option> value="expense" {% if transaction[2] == 'expense' %}selected{% endif %}>Расход</option>
+                                <option value="income" {% if transaction[2] == 'income' %}selected{% endif %}>Доход</option>
+                                <option value="expense" {% if transaction[2] == 'expense' %}selected{% endif %}>Расход</option>
                             </select>
                             <span class="select-arrow"><i class="fas fa-chevron-down"></i></span>
                         </div>
@@ -25,25 +28,27 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Категория:</label>
-                    <div class="custom-select">
-                        <select name="category" required class="form-input">
-                            <option value="" disabled>Выберите категорию</option>
-                            {% for cat in categories %}
-                            <option> value="{{ cat['name'] }}" {% if cat['name'] == transaction[5] %}selected{% endif %}>
-                                {{ cat['name'] }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                        <span class="select-arrow"><i class="fas fa-chevron-down"></i></span>
-                    </div>
-                </div>
+                <!-- Замените блок с выбором категории на этот: -->
+<div class="form-group">
+    <label>Категория:</label>
+    <div class="custom-select">
+        <select id="editCategorySelect" name="category" required class="form-input">
+            <option value="" disabled>Выберите категорию</option>
+            {% for cat in categories %}
+            <option value="{{ cat['name'] }}" data-type="{{ cat['type'] }}"
+                    {% if cat['name'] == transaction[5] %}selected{% endif %}>
+                {{ cat['name'] }}
+            </option>
+            {% endfor %}
+        </select>
+        <span class="select-arrow"><i class="fas fa-chevron-down"></i></span>
+    </div>
+</div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label>Дата:</label>
-                        <input type="date" name="date" value="{{ transaction[4] }}" class="form-input">
+                        <input type="date" name="date" value="{{ transaction[4] or '' }}" class="form-input">
                     </div>
 
                     <div class="form-group">

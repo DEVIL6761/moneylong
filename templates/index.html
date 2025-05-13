@@ -30,18 +30,19 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="categorySelect">Категория:</label>
-                        <div class="custom-select">
-                            <select id="categorySelect" name="category" required>
-                                <option value="" disabled selected>Выберите категорию</option>
-                                {% for cat in categories if cat['name'] != '+ Новая категория' %}
-                                <option value="{{ cat['name'] }}">{{ cat['name'] }}</option>
-                                {% endfor %}
-                            </select>
-                            <span class="select-arrow"><i class="fas fa-chevron-down"></i></span>
-                        </div>
-                    </div>
+                    <!-- Замените блок с выбором категории на этот: -->
+<div class="form-group">
+    <label for="categorySelect">Категория:</label>
+    <div class="custom-select">
+        <select id="categorySelect" name="category" required>
+            <option value="" disabled selected>Выберите категорию</option>
+            {% for cat in categories if cat['name'] != '+ Новая категория' %}
+            <option value="{{ cat['name'] }}" data-type="{{ cat['type'] }}">{{ cat['name'] }}</option>
+            {% endfor %}
+        </select>
+        <span class="select-arrow"><i class="fas fa-chevron-down"></i></span>
+    </div>
+</div>
 
                     <div class="form-row">
                         <div class="form-group">
@@ -98,31 +99,31 @@
                 </thead>
                 <tbody>
                     <!-- В таблице истории операций измените строки с транзакциями: -->
-                    {% for t in transactions %}
-                    <tr class="{{ t['type'] }}" data-id="{{ t.get('id', '') }}">
-                        <td>{{ t['date'] }}</td>
-                        <td>{{ t['amount'] }} BYN</td>
-                        <td>{{ t['name'] }}</td>
-                        <td>
-                            {% if t['type'] == 'income' %}
-                                <i class="fas fa-arrow-down income"></i> Доход
-                            {% else %}
-                                <i class="fas fa-arrow-up expense"></i> Расход
-                            {% endif %}
-                        </td>
-                        <td>{{ t['description'] or '' }}</td>
-                        <td class="actions">
-                            {% if t.get('id') %}
-                                <a href="{{ url_for('edit_transaction', transaction_id=t['id']) }}" class="edit-btn">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <button class="delete-btn" data-id="{{ t['id'] }}">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
+{% for t in transactions %}
+<tr class="{{ t['type'] }}" data-id="{{ t.get('id', '') }}">
+    <td>{{ t['date'] }}</td>
+    <td>{{ t['amount'] }} BYN</td>
+    <td>{{ t['name'] }}</td>
+    <td>
+        {% if t['type'] == 'income' %}
+            <i class="fas fa-arrow-up income"></i> Доход
+        {% else %}
+            <i class="fas fa-arrow-down expense"></i> Расход
+        {% endif %}
+    </td>
+    <td>{{ t['description'] or '' }}</td>
+    <td class="actions">
+        {% if t.get('id') %}
+            <a href="{{ url_for('edit_transaction', transaction_id=t['id']) }}" class="edit-btn">
+                <i class="fas fa-edit"></i>
+            </a>
+            <button class="delete-btn" data-id="{{ t['id'] }}">
+                <i class="fas fa-trash"></i>
+            </button>
+        {% endif %}
+    </td>
+</tr>
+{% endfor %}
                 </tbody>
             </table>
         </div>

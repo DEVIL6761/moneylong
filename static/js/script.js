@@ -169,3 +169,70 @@ document.addEventListener('click', function(e) {
         window.location.href = `/edit_transaction/${id}`;
     }
 });
+
+
+// Фильтрация категорий по типу операции
+document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.querySelector('select[name="type"]');
+    const categorySelect = document.getElementById('categorySelect');
+
+    if (typeSelect && categorySelect) {
+        // При изменении типа операции
+        typeSelect.addEventListener('change', function() {
+            const selectedType = this.value;
+            const options = categorySelect.querySelectorAll('option[data-type]');
+
+            // Сначала скрываем все опции
+            options.forEach(option => {
+                option.style.display = 'none';
+                option.disabled = true;
+            });
+
+            // Показываем только соответствующие выбранному типу
+            const validOptions = categorySelect.querySelectorAll(`option[data-type="${selectedType}"]`);
+            validOptions.forEach(option => {
+                option.style.display = 'block';
+                option.disabled = false;
+            });
+
+            // Сбрасываем выбранную категорию
+            categorySelect.value = '';
+
+            // Активируем первый доступный вариант
+            if (validOptions.length > 0) {
+                validOptions[0].selected = true;
+            }
+        });
+
+        // Инициализация при загрузке
+        typeSelect.dispatchEvent(new Event('change'));
+    }
+});
+
+
+
+// Для формы редактирования
+document.addEventListener('DOMContentLoaded', function() {
+    const editTypeSelect = document.querySelector('select[name="type"]');
+    const editCategorySelect = document.getElementById('editCategorySelect');
+
+    if (editTypeSelect && editCategorySelect) {
+        editTypeSelect.addEventListener('change', function() {
+            const selectedType = this.value;
+            const options = editCategorySelect.querySelectorAll('option[data-type]');
+
+            options.forEach(option => {
+                if (option.getAttribute('data-type') === selectedType || option.selected) {
+                    option.style.display = 'block';
+                    option.disabled = false;
+                } else {
+                    option.style.display = 'none';
+                    option.disabled = true;
+                }
+            });
+        });
+
+        // Инициализация при загрузке
+        editTypeSelect.dispatchEvent(new Event('change'));
+    }
+});

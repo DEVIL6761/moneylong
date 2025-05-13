@@ -3,7 +3,19 @@
 {% block content %}
 <div class="analytics-container">
     <h1><i class="fas fa-chart-pie"></i> Аналитика финансов</h1>
+    <form id="monthForm" method="get" style="text-align: center; margin-bottom: 20px;">
+    <label for="monthSelect">Выберите месяц:</label>
+    <select name="month" id="monthSelect" onchange="document.getElementById('monthForm').submit()">
+        {% for month in months %}
+            <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>{{ month }}</option>
+        {% endfor %}
+    </select>
+</form>
 
+    <!-- Добавляем секцию с гистограммой -->
+
+
+    <!-- Остальные секции остаются без изменений -->
     <div class="analytics-section">
         <h2>Расходы по категориям</h2>
         <div class="chart-container">
@@ -24,13 +36,83 @@
         </div>
     </div>
 </div>
+
+
+<div class="analytics-section">
+        <h2>Движение средств по дням</h2>
+        <div class="chart-container">
+            <canvas id="dailyChart" height="400"></canvas>
+        </div>
+    </div>
 {% endblock %}
+
+
+
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Основной цвет текста (как у общей суммы)
         const textColor = '#dfe6e9';
+
+        // ================= DAILY BAR CHART =================
+        const dailyData = {
+            labels: {{ daily_stats | map(attribute='day') | list | tojson }},
+            income: {{ daily_stats | map(attribute='income') | list | tojson }},
+            expense: {{ daily_stats | map(attribute='expense') | list | tojson }}
+
+        };
+
+        const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+        new Chart(dailyCtx, {
+            type: 'bar',
+            data: {
+                labels: dailyData.labels,
+                datasets: [
+                    {
+                        label: 'Доходы',
+                        data: dailyData.income,
+                        backgroundColor: '#00b894',
+                        borderColor: '#00b894',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Расходы',
+                        data: dailyData.expense,
+                        backgroundColor: '#d63031',
+                        borderColor: '#d63031',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        ticks: { color: textColor },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    },
+                    y: {
+                        ticks: {
+                            color: textColor,
+                            callback: (value) => value + ' BYN'
+                        },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: textColor } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.raw.toFixed(2) + ' BYN';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // ================= PIE CHARTS (EXPENSE/INCOME) =================
 
         const calculatePercentages = (data) => {
             const total = data.reduce((sum, item) => sum + item.total, 0);
@@ -49,13 +131,11 @@
         createChart('expenseChart', expenseChartData, textColor);
         createChart('incomeChart', incomeChartData, textColor);
 
-            function createChart(canvasId, chartData, textColor) {
-        const ctx = document.getElementById(canvasId).getContext('2d');
-        const totalElement = document.getElementById(canvasId.replace('Chart', 'Total'));
-
-        // Общая сумма сдвинута влево (35%) и валюта BYN
-        totalElement.textContent = `${chartData.total.toFixed(2)} BYN`; // Изменено на BYN
-        totalElement.style.left = '35%'; // Сильнее сдвигаем влево
+        function createChart(canvasId, chartData, textColor) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            const totalElement = document.getElementById(canvasId.replace('Chart', 'Total'));
+            totalElement.textContent = `${chartData.total.toFixed(2)} BYN`;
+            totalElement.style.left = '35%';
 
             const chart = new Chart(ctx, {
                 type: 'doughnut',
@@ -76,14 +156,14 @@
                         legend: {
                             position: 'right',
                             labels: {
-                                color: textColor // Цвет текста категорий как у общей суммы
+                                color: textColor
                             }
                         },
                         tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const percentage = chartData.data[context.dataIndex].percentage;
-                                return `${context.label}: ${context.raw.toFixed(2)} BYN (${percentage}%)`; // BYN вместо ₽
+                            callbacks: {
+                                label: function(context) {
+                                    const percentage = chartData.data[context.dataIndex].percentage;
+                                    return `${context.label}: ${context.raw.toFixed(2)} BYN (${percentage}%)`;
                                 }
                             }
                         }
@@ -95,21 +175,7 @@
                 }
             });
 
-            // Добавляем проценты на диаграмму
             chart.update();
-            chartData.data.forEach((item, index) => {
-                if (item.percentage > 10) {
-                    const arc = chart.getDatasetMeta(0).data[index];
-                    if (arc) {
-                        const {x, y} = arc.tooltipPosition();
-                        ctx.font = 'bold 12px Arial';
-                        ctx.fillStyle = textColor; // Цвет процентов как у общей суммы
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText(`${item.percentage}%`, x, y);
-                    }
-                }
-            });
         }
     });
 </script>

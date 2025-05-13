@@ -2,7 +2,9 @@ import sqlite3
 from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
-
+import matplotlib.pyplot as plt
+import io
+import base64
 
 class FinanceApp:
     def __init__(self, db_name='finance.db'):
@@ -58,8 +60,6 @@ class FinanceApp:
         FROM transactions t 
         JOIN categories c ON t.category_id = c.id
         '''
-        # ... остальной код ...
-
         params = []
         conditions = []
 
@@ -215,6 +215,74 @@ class FinanceApp:
             raise e
         finally:
             conn.close()
+
+    def get_daily_stats(self, month=None):
+        df = self.get_transactions()
+
+        # Преобразуем в datetime
+        df['date'] = pd.to_datetime(df['date'])
+
+        # Фильтруем по месяцу, если передан
+        if month:
+            df = df[df['date'].dt.strftime('%Y-%m') == month]
+        else:
+            month = datetime.now().strftime('%Y-%m')
+            df = df[df['date'].dt.strftime('%Y-%m') == month]
+
+        # Добавим день месяца как число
+        df['day'] = df['date'].dt.day
+
+        # Группируем по дню и типу транзакции
+        grouped = df.groupby(['day', 'type'])['amount'].sum().unstack(fill_value=0).reset_index()
+
+        # Получаем все дни в месяце
+        days_in_month = pd.date_range(start=f'{month}-01', end=pd.to_datetime(f'{month}-01') + pd.offsets.MonthEnd(0))
+        full_days = pd.DataFrame({'day': days_in_month.day})
+
+        # Объединяем с группировкой и заполняем пропуски
+        merged = pd.merge(full_days, grouped, on='day', how='left').fillna(0)
+
+        # Убедимся, что нужные колонки есть
+        if 'income' not in merged.columns:
+            merged['income'] = 0
+        if 'expense' not in merged.columns:
+            merged['expense'] = 0
+
+        # Формат в список словарей
+        result = merged[['day', 'income', 'expense']].to_dict(orient='records')
+        return result
+
+        days_in_month = pd.date_range(start=f"{month}-01", periods=31, freq='D')
+        days_in_month = days_in_month[days_in_month.month == int(month[-2:])]
+
+        full_days = pd.DataFrame({'day': days_in_month.day})
+        grouped = df.groupby(['day', 'type'])['amount'].sum().unstack().fillna(0)
+        grouped = full_days.merge(grouped, on='day', how='left').fillna(0)
+
+        # Построение
+        fig, ax = plt.subplots(figsize=(12, 5))  # Растянутая ширина
+
+        ax.bar(grouped['day'], grouped.get('доход', 0), label='Доходы', color='green')
+        ax.bar(grouped['day'], -grouped.get('расход', 0), label='Расходы', color='red')
+
+        ax.set_xticks(grouped['day'])  # Показываем все числа месяца
+        ax.set_xticklabels(grouped['day'].astype(int))  # Только число
+        ax.tick_params(axis='x', rotation=0)  # Перпендикулярноget
+        ax.legend()
+        ax.set_title(f'Доходы и расходы за {month}')
+        ax.set_xlabel('День')
+        ax.set_ylabel('Сумма')
+
+        # Преобразование в base64
+        buf = io.BytesIO()
+        plt.tight_layout()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        image_base64 = base64.b64encode(buf.read()).decode('utf-8')
+        buf.close()
+
+        return image_base64
+
 
 # Пример использования
 if __name__ == '__main__':

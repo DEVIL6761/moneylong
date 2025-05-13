@@ -818,3 +818,23 @@ a.btn-secondary:hover, button.btn-secondary:hover {
 .custom-select select:focus {
     color: #dfe6e9;
 }
+
+
+/* Стили для гистограммы */
+#dailyChart {
+    max-height: 400px;
+    margin: 0 auto;
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
+    margin: 20px 0;
+}
+
+.chart-container, .chart-wrapper {
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
