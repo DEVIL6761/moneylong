@@ -1,182 +1,196 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="analytics-container">
+<div class="analytics-container" style="max-width: none; width: 100%; padding: 0 40px;">
+
     <h1><i class="fas fa-chart-pie"></i> Аналитика финансов</h1>
     <form id="monthForm" method="get" style="text-align: center; margin-bottom: 20px;">
-    <label for="monthSelect">Выберите месяц:</label>
-    <select name="month" id="monthSelect" onchange="document.getElementById('monthForm').submit()">
-        {% for month in months %}
-            <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>{{ month }}</option>
-        {% endfor %}
-    </select>
-</form>
+        <label for="monthSelect">Выберите месяц:</label>
+        <select name="month" id="monthSelect" onchange="document.getElementById('monthForm').submit()">
+            {% for month in months %}
+                <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>{{ month | format_month }}</option>
+            {% endfor %}
+        </select>
+    </form>
 
-    <!-- Добавляем секцию с гистограммой -->
+    <!-- Секция с гистограммой - теперь первой -->
+    <div class="analytics-section full-width-bar">
+        <h2>Движение средств по дням — {{ selected_month | format_month }}</h2>
+        <div style="width: 68vw; height: 500px; margin-center: calc(-50vw + 50%);">
+            <canvas id="dailyChart" style="width: 100% !important; height: 100% !important;"></canvas>
+        </div>
+    </div>
 
-
-    <!-- Остальные секции остаются без изменений -->
+    <!-- Остальные секции -->
     <div class="analytics-section">
-        <h2>Расходы по категориям</h2>
+        <h2>Расходы по категориям — {{ selected_month | format_month }}</h2>
         <div class="chart-container">
             <div class="chart-wrapper">
-                <canvas id="expenseChart"></canvas>
-                <div class="chart-total" id="expenseTotal"></div>
-            </div>
+    <canvas id="expenseChart"></canvas>
+    <div class="chart-total" id="expenseTotal"></div>
+</div>
+
         </div>
     </div>
 
     <div class="analytics-section">
-        <h2>Доходы по категориям</h2>
+        <h2>Доходы по категориям — {{ selected_month | format_month }}</h2>
         <div class="chart-container">
-            <div class="chart-wrapper">
+            <div class="chart-wrapper" style="position: relative;">
                 <canvas id="incomeChart"></canvas>
                 <div class="chart-total" id="incomeTotal"></div>
             </div>
         </div>
     </div>
 </div>
-
-
-<div class="analytics-section">
-        <h2>Движение средств по дням</h2>
-        <div class="chart-container">
-            <canvas id="dailyChart" height="400"></canvas>
-        </div>
-    </div>
 {% endblock %}
-
-
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const textColor = '#dfe6e9';
-
-        // ================= DAILY BAR CHART =================
-        const dailyData = {
-            labels: {{ daily_stats | map(attribute='day') | list | tojson }},
-            income: {{ daily_stats | map(attribute='income') | list | tojson }},
-            expense: {{ daily_stats | map(attribute='expense') | list | tojson }}
-
+        const selectedMonth = '{{ selected_month }}';
+        const monthNames = {
+            '01': 'январь', '02': 'февраль', '03': 'март', '04': 'апрель',
+            '05': 'май', '06': 'июнь', '07': 'июль', '08': 'август',
+            '09': 'сентябрь', '10': 'октябрь', '11': 'ноябрь', '12': 'декабрь'
         };
 
-        const dailyCtx = document.getElementById('dailyChart').getContext('2d');
-        new Chart(dailyCtx, {
-            type: 'bar',
-            data: {
-                labels: dailyData.labels,
-                datasets: [
-                    {
-                        label: 'Доходы',
-                        data: dailyData.income,
-                        backgroundColor: '#00b894',
-                        borderColor: '#00b894',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Расходы',
-                        data: dailyData.expense,
-                        backgroundColor: '#d63031',
-                        borderColor: '#d63031',
-                        borderWidth: 1
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    x: {
-                        ticks: { color: textColor },
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                    },
-                    y: {
-                        ticks: {
-                            color: textColor,
-                            callback: (value) => value + ' BYN'
+        // Форматирование даты (апрель 2025)
+        function formatMonthYear(dateStr) {
+            const [year, month] = dateStr.split('-');
+            return `${monthNames[month]} ${year}`;
+        }
+
+        // ================= DAILY BAR CHART =================
+        const dailyCtx = document.getElementById('dailyChart');
+        if (dailyCtx) {
+            const dailyData = {
+                labels: {{ daily_stats | map(attribute='day') | list | tojson }},
+                income: {{ daily_stats | map(attribute='income') | list | tojson }},
+                expense: {{ daily_stats | map(attribute='expense') | list | tojson }}
+            };
+
+            new Chart(dailyCtx, {
+                type: 'bar',
+                data: {
+                    labels: dailyData.labels,
+                    datasets: [
+                        {
+                            label: 'Доходы',
+                            data: dailyData.income,
+                            backgroundColor: '#00b894',
+                            borderColor: '#00b894',
+                            borderWidth: 1
                         },
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                    }
+                        {
+                            label: 'Расходы',
+                            data: dailyData.expense.map(x => -x),
+                            backgroundColor: '#d63031',
+                            borderColor: '#d63031',
+                            borderWidth: 1
+                        }
+                    ]
                 },
-                plugins: {
-                    legend: { labels: { color: textColor } },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.dataset.label + ': ' + context.raw.toFixed(2) + ' BYN';
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: { color: textColor },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        y: {
+                            ticks: {
+                                color: textColor,
+                                callback: value => Math.abs(value) + ' BYN'
+                            },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: textColor,
+                                filter: item => item.text.includes('Доходы') || item.text.includes('Расходы')
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => {
+                                    const label = ctx.dataset.label.split(' (')[0];
+                                    return `${label}: ${Math.abs(ctx.raw).toFixed(2)} BYN`;
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
 
-        // ================= PIE CHARTS (EXPENSE/INCOME) =================
+        // ================= PIE CHARTS =================
+        function createPieChart(canvasId, data, title) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
 
-        const calculatePercentages = (data) => {
-            const total = data.reduce((sum, item) => sum + item.total, 0);
-            return {
-                data: data.map(item => ({
-                    ...item,
-                    percentage: (item.total / total * 100).toFixed(1)
-                })),
-                total: total
+            const chartData = {
+                labels: data.map(item => item.name),
+                datasets: [{
+                    data: data.map(item => item.total),
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                        '#9966FF', '#FF9F40', '#8AC24A', '#607D8B'
+                    ],
+                    borderWidth: 1
+                }]
             };
-        };
 
-        const expenseChartData = calculatePercentages({{ expense_stats|tojson }});
-        const incomeChartData = calculatePercentages({{ income_stats|tojson }});
+            const total = data.reduce((sum, item) => sum + item.total, 0);
+            document.getElementById(canvasId.replace('Chart', 'Total')).textContent =
+                `${total.toFixed(2)} BYN`;
 
-        createChart('expenseChart', expenseChartData, textColor);
-        createChart('incomeChart', incomeChartData, textColor);
-
-        function createChart(canvasId, chartData, textColor) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            const totalElement = document.getElementById(canvasId.replace('Chart', 'Total'));
-            totalElement.textContent = `${chartData.total.toFixed(2)} BYN`;
-            totalElement.style.left = '35%';
-
-            const chart = new Chart(ctx, {
+            new Chart(ctx, {
                 type: 'doughnut',
-                data: {
-                    labels: chartData.data.map(item => item.name),
-                    datasets: [{
-                        data: chartData.data.map(item => item.total),
-                        backgroundColor: [
-                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
-                            '#9966FF', '#FF9F40', '#8AC24A', '#607D8B'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
+                data: chartData,
                 options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
                     cutout: '70%',
                     plugins: {
                         legend: {
                             position: 'right',
                             labels: {
-                                color: textColor
+                                color: textColor,
+                                filter: (item, data) => true // Показываем все элементы легенды для круговых диаграмм
                             }
                         },
+
                         tooltip: {
                             callbacks: {
-                                label: function(context) {
-                                    const percentage = chartData.data[context.dataIndex].percentage;
-                                    return `${context.label}: ${context.raw.toFixed(2)} BYN (${percentage}%)`;
+                                label: ctx => {
+                                    const value = ctx.raw;
+                                    const percentage = (value / total * 100).toFixed(1);
+                                    return `${ctx.label}: ${value.toFixed(2)} BYN (${percentage}%)`;
                                 }
                             }
                         }
-                    },
-                    animation: {
-                        animateScale: true,
-                        animateRotate: true
                     }
                 }
             });
-
-            chart.update();
         }
+
+        createPieChart(
+            'expenseChart',
+            {{ expense_stats | tojson }},
+            `Расходы по категориям`
+        );
+
+        createPieChart(
+            'incomeChart',
+            {{ income_stats | tojson }},
+            `Доходы по категориям`
+        );
     });
 </script>
 {% endblock %}

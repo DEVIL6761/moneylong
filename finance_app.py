@@ -156,33 +156,53 @@ class FinanceApp:
         plt.title(f"{'Доходы' if trans_type == 'income' else 'Расходы'} ({period})")
         plt.show()
 
-    def get_expense_stats(self):
-        """Возвращает статистику по расходам"""
+    def get_expense_stats(self, month=None):
+        """Возвращает статистику по расходам за указанный месяц"""
         conn = self._get_connection()
+
         query = '''
         SELECT c.name, SUM(t.amount) as total 
         FROM transactions t
         JOIN categories c ON t.category_id = c.id
         WHERE t.type = 'expense'
+        '''
+
+        params = []
+        if month:
+            query += " AND strftime('%Y-%m', t.date) = ?"
+            params.append(month)
+
+        query += '''
         GROUP BY c.name
         ORDER BY total DESC
         '''
-        df = pd.read_sql(query, conn)
+
+        df = pd.read_sql(query, conn, params=params if params else None)
         conn.close()
         return df.to_dict('records')
 
-    def get_income_stats(self):
-        """Возвращает статистику по доходам"""
+    def get_income_stats(self, month=None):
+        """Возвращает статистику по доходам за указанный месяц"""
         conn = self._get_connection()
+
         query = '''
         SELECT c.name, SUM(t.amount) as total 
         FROM transactions t
         JOIN categories c ON t.category_id = c.id
         WHERE t.type = 'income'
+        '''
+
+        params = []
+        if month:
+            query += " AND strftime('%Y-%m', t.date) = ?"
+            params.append(month)
+
+        query += '''
         GROUP BY c.name
         ORDER BY total DESC
         '''
-        df = pd.read_sql(query, conn)
+
+        df = pd.read_sql(query, conn, params=params if params else None)
         conn.close()
         return df.to_dict('records')
 

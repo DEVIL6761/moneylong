@@ -90,10 +90,11 @@ def analytics():
     selected_month = request.args.get('month') or datetime.now().strftime('%Y-%m')
 
     daily_stats = finance_app.get_daily_stats(month=selected_month)
-    expense_stats = finance_app.get_expense_stats()
-    income_stats = finance_app.get_income_stats()
+    expense_stats = finance_app.get_expense_stats(month=selected_month)
+    income_stats = finance_app.get_income_stats(month=selected_month)
 
-    # Все уникальные месяцы в базе
+
+
     df = finance_app.get_transactions()
     df['month'] = pd.to_datetime(df['date']).dt.strftime('%Y-%m')
     months = sorted(df['month'].unique(), reverse=True)
@@ -166,6 +167,20 @@ def edit_transaction(transaction_id):
         except Exception as e:
             flash(f'Ошибка: {str(e)}', 'danger')
             return redirect(url_for('edit_transaction', transaction_id=transaction_id))
+
+
+@app.template_filter('format_month')
+def format_month(value):
+    month_names = {
+        '01': 'январь', '02': 'февраль', '03': 'март', '04': 'апрель',
+        '05': 'май', '06': 'июнь', '07': 'июль', '08': 'август',
+        '09': 'сентябрь', '10': 'октябрь', '11': 'ноябрь', '12': 'декабрь'
+    }
+    try:
+        year, month = value.split('-')
+        return f"{month_names.get(month, month)} {year}"
+    except Exception:
+        return value
 
 
 if __name__ == '__main__':
