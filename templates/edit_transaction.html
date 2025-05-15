@@ -2,71 +2,131 @@
 
 {% block content %}
 <div class="container">
-    <h1><i class="fas fa-edit"></i> Редактирование операции</h1>
+    <h1>
+        <i class="fas fa-edit"></i>
+        Редактирование транзакции #{{ transaction_id }}
+        <small class="text-muted">{{ transaction.category_name }}</small>
+    </h1>
 
     <div class="transaction-form">
-        <form
-            action="{% if transaction[0] %}{{ url_for('edit_transaction', transaction_id=transaction[0]) }}{% else %}{{ url_for('home') }}{% endif %}"
-            method="POST"
-        >
+        <form action="{{ url_for('edit_transaction', transaction_id=transaction_id) }}" method="POST">
             <div class="form-fields">
                 <div class="form-row">
                     <div class="form-group">
                         <label>Тип:</label>
                         <div class="custom-select">
                             <select name="type" required class="form-input">
-                                <option value="income" {% if transaction[2] == 'income' %}selected{% endif %}>Доход</option>
-                                <option value="expense" {% if transaction[2] == 'expense' %}selected{% endif %}>Расход</option>
+                                <option value="income" {% if transaction.type == 'income' %}selected{% endif %}>Доход</option>
+                                <option value="expense" {% if transaction.type == 'expense' %}selected{% endif %}>Расход</option>
                             </select>
                             <span class="select-arrow"><i class="fas fa-chevron-down"></i></span>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label>Сумма (BYN):</label>
-                        <input type="text" name="amount" value="{{ transaction[1] }}" class="form-input" required>
+                        <label>Сумма ({{ transaction.currency }}):</label>
+                        <input type="text"
+                               name="amount"
+                               value="{{ "%.2f"|format(transaction.amount) }}"
+                               class="form-input"
+                               required>
                     </div>
                 </div>
 
-                <!-- Замените блок с выбором категории на этот: -->
-<div class="form-group">
-    <label>Категория:</label>
-    <div class="custom-select">
-        <select id="editCategorySelect" name="category" required class="form-input">
-            <option value="" disabled>Выберите категорию</option>
-            {% for cat in categories %}
-            <option value="{{ cat['name'] }}" data-type="{{ cat['type'] }}"
-                    {% if cat['name'] == transaction[5] %}selected{% endif %}>
-                {{ cat['name'] }}
-            </option>
-            {% endfor %}
-        </select>
-        <span class="select-arrow"><i class="fas fa-chevron-down"></i></span>
-    </div>
-</div>
+                <div class="form-group">
+                    <label>Категория:</label>
+                    <div class="current-category mb-2">
+                        Текущая: <strong>{{ transaction.category_name }}</strong>
+                    </div>
+                    <div class="custom-select">
+                        <select name="category" required class="form-input">
+                            <option value="">Выберите новую категорию</option>
+                            {% for cat in categories %}
+                                {% if cat.type == transaction.type %}
+                                <option value="{{ cat.name }}"
+                                        {% if cat.name == transaction.category_name %}selected{% endif %}>
+                                    {{ cat.name }} ({{ cat.type }})
+                                </option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                        <span class="select-arrow"><i class="fas fa-chevron-down"></i></span>
+                    </div>
+                </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label>Дата:</label>
-                        <input type="date" name="date" value="{{ transaction[4] or '' }}" class="form-input">
+                        <input type="date"
+                               name="date"
+                               value="{{ transaction.date }}"
+                               class="form-input"
+                               required>
                     </div>
 
                     <div class="form-group">
                         <label>Описание:</label>
-                        <input type="text" name="description" value="{{ transaction[3] or '' }}" class="form-input">
+                        <input type="text"
+                               name="description"
+                               value="{{ transaction.description or '' }}"
+                               class="form-input"
+                               placeholder="Описание операции">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Счет:</label>
+                    <div class="custom-select">
+                        <select name="account" required class="form-input">
+                            {% for account in accounts %}
+                            <option value="{{ account.id }}"
+                                    {% if account.id == transaction.account_id %}selected{% endif %}>
+                                {{ account.name }} ({{ "%.2f"|format(account.balance) }} {{ account.currency }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="select-arrow"><i class="fas fa-chevron-down"></i></span>
                     </div>
                 </div>
             </div>
 
             <div class="form-actions">
-                <button type="submit" class="form-btn btn-primary">
+                <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> Сохранить
                 </button>
-                <a href="{{ url_for('home') }}" class="form-btn btn-secondary">
+                <a href="{{ url_for('home') }}" class="btn btn-secondary">
                     <i class="fas fa-times"></i> Отмена
                 </a>
             </div>
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Синхронизация типа операции с доступными категориями
+    const typeSelect = document.querySelector('select[name="type"]');
+    const categorySelect = document.querySelector('select[name="category"]');
+
+    if (typeSelect && categorySelect) {
+        typeSelect.addEventListener('change', function() {
+            const selectedType = this.value;
+            const options = categorySelect.querySelectorAll('option');
+
+            options.forEach(opt => {
+                if (opt.value === "") return;
+                opt.style.display = opt.dataset.type === selectedType ? '' : 'none';
+            });
+
+            // Сброс выбранной категории при изменении типа
+            if (categorySelect.value &&
+                !categorySelect.querySelector(`option[value="${categorySelect.value}"]:not([style*="none"])`)) {
+                categorySelect.value = "";
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

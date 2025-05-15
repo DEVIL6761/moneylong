@@ -923,4 +923,87 @@ a.btn-secondary:hover, button.btn-secondary:hover {
     white-space: nowrap;
 }
 
+/* Стили для раздела баланса */
+.balance-section {
+    background: var(--light-dark);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
 
+.total-balance {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    margin: 15px 0;
+}
+
+.total-balance .amount {
+    color: var(--secondary);
+}
+
+.accounts-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.account-card {
+    background: #3d484f;
+    padding: 15px;
+    border-radius: 8px;
+    transition: transform 0.3s;
+}
+
+.account-card:hover {
+    transform: translateY(-3px);
+}
+
+.account-balance {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin: 10px 0;
+    color: var(--secondary);
+}
+
+.account-description {
+    font-size: 0.9rem;
+    color: #a0a0a0;
+}
+
+/* Модальное окно */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+}
+
+.modal-content {
+    background-color: var(--light-dark);
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 500px;
+    position: relative;
+}
+
+.close {
+    position: absolute;
+    right: 20px;
+    top: 10px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: var(--secondary);
+}

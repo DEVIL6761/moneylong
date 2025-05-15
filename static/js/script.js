@@ -236,3 +236,21 @@ document.addEventListener('DOMContentLoaded', function() {
         editTypeSelect.dispatchEvent(new Event('change'));
     }
 });
+
+
+// Обработчик для кнопки добавления счета
+document.getElementById('addAccountBtn')?.addEventListener('click', function() {
+    document.getElementById('accountModal').style.display = 'block';
+});
+
+// Закрытие модального окна
+document.querySelector('.modal .close')?.addEventListener('click', function() {
+    document.getElementById('accountModal').style.display = 'none';
+});
+
+// Закрытие при клике вне окна
+window.addEventListener('click', function(event) {
+    if (event.target === document.getElementById('accountModal')) {
+        document.getElementById('accountModal').style.display = 'none';
+    }
+});
