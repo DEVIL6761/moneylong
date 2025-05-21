@@ -1,19 +1,3 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Показ/скрытие истории операций
-    const historyToggle = document.getElementById('historyToggle');
-    const transactionHistory = document.getElementById('transactionHistory');
-
-    // Обработчик для кнопки истории
-    historyToggle.addEventListener('click', function() {
-        const history = document.getElementById('transactionHistory');
-        history.style.display = history.style.display === 'block' ? 'none' : 'block';
-        this.innerHTML = history.style.display === 'block'
-            ? '<i class="fas fa-times"></i> Скрыть историю'
-            : '<i class="fas fa-history"></i> История операций';
-    });
-
-    // Инициализация - скрываем историю при загрузке
-    transactionHistory.style.display = 'none';
 
     // Валидация поля суммы
     document.querySelector('input[name="amount"]').addEventListener('input', function(e) {
@@ -239,7 +223,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // Обработчик для кнопки добавления счета
-document.getElementById('addAccountBtn')?.addEventListener('click', function() {
+document.getElementById('addAccountBtn').addEventListener('click', function() {
+    // Показываем модальное окно
     document.getElementById('accountModal').style.display = 'block';
 });
 
@@ -254,3 +239,53 @@ window.addEventListener('click', function(event) {
         document.getElementById('accountModal').style.display = 'none';
     }
 });
+
+
+// Удаление счета
+document.querySelectorAll('.delete-account-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.stopPropagation(); // Предотвращаем всплытие события
+        const accountId = this.getAttribute('data-id');
+
+        if (confirm('Вы уверены, что хотите удалить этот счет? Все связанные транзакции будут удалены.')) {
+            fetch(`/delete_account/${accountId}`, {
+                method: 'DELETE',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Не удалось удалить счет'));
+                }
+            })
+            .catch(error => {
+                alert('Ошибка сети: ' + error);
+            });
+        }
+    });
+});
+
+
+// Ensure account is selected before form submission
+document.querySelector('form').addEventListener('submit', function(e) {
+    const accountSelect = this.querySelector('select[name="account"]');
+    if (!accountSelect.value) {
+        e.preventDefault();
+        alert('Пожалуйста, выберите счет для операции');
+        accountSelect.focus();
+    }
+});
+
+
+// Подсветка активной ссылки в навигации
+    document.addEventListener('DOMContentLoaded', function() {
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        navLinks.forEach(link => {
+            if (link.getAttribute('href') === currentPath) {
+                link.classList.add('active');
+            }
+        });
+    });

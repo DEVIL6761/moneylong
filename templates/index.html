@@ -9,82 +9,59 @@
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-wallet"></i> Учет финансов</h1>
-        <!-- Добавим в начало контейнера, перед формой добавления операции -->
-<div class="balance-section">
-    <h2><i class="fas fa-coins"></i> Баланс</h2>
-    <div class="total-balance">
-        Общий баланс: <span class="amount">{{ "%.2f"|format(total_balance) }} BYN</span>
-    </div>
+        <form id="mainForm" method="post" action="">
+            <h1><i class="fas fa-wallet"></i> Учет финансов</h1>
 
-    <div class="accounts-list">
-        {% for account in accounts %}
-        <div class="account-card">
-            <h3>{{ account.name }}</h3>
-            <div class="account-balance">{{ "%.2f"|format(account.balance) }} {{ account.currency }}</div>
-            <div class="account-description">{{ account.description or '' }}</div>
-        </div>
-        {% endfor %}
+            <!-- Счета -->
+            <div class="section-header">
+                <h2><i class="fas fa-coins"></i> Счета</h2>
+            </div>
 
-        <button class="btn btn-secondary" id="addAccountBtn">
-            <i class="fas fa-plus"></i> Добавить счет
-        </button>
-    </div>
-</div>
+            <div class="total-balance">
+                Общий баланс: <span class="amount">{{ "%.2f"|format(total_balance) }} BYN</span>
+            </div>
 
-<!-- Модальное окно для добавления счета -->
-<div id="accountModal" class="modal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <h2>Добавить новый счет</h2>
-        <form action="{{ url_for('add_account') }}" method="post">
-            <div class="form-group">
-                <label>Название счета:</label>
-                <input type="text" name="name" required>
-            </div>
-            <div class="form-group">
-                <label>Начальный баланс:</label>
-                <input type="number" step="0.01" name="initial_balance" value="0">
-            </div>
-            <div class="form-group">
-                <label>Валюта:</label>
-                <select name="currency">
-                    <option value="BYN">BYN</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="RUB">RUB</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Описание (необязательно):</label>
-                <textarea name="description"></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary">Сохранить</button>
-        </form>
-    </div>
-</div>
 
-<!-- В форме добавления операции добавим выбор счета -->
-<div class="form-group">
-    <label>Счет:</label>
-    <div class="custom-select">
-        <select name="account">
-            <option value="">Выберите счет</option>
-            {% for account in accounts %}
-            <option value="{{ account.id }}">{{ account.name }} ({{ "%.2f"|format(account.balance) }} {{ account.currency }})</option>
-            {% endfor %}
-        </select>
-        <span class="select-arrow"><i class="fas fa-chevron-down"></i></span>
-    </div>
-</div>
-        <div class="transaction-form">
-            <h2><i class="fas fa-plus-circle"></i> Добавить операцию</h2>
-            <form action="{{ url_for('add_transaction_route') }}" method="post">
-                <div class="form-fields">
+
+            <!-- Операции -->
+            <div class="operations-section">
+                <div class="transaction-form full-width">
+                    <div class="accounts-list">
+                {% for account in accounts %}
+                <div class="account-card form-input">
+                    <h3>{{ account.name }}</h3>
+                    <div class="account-balance">{{ "%.2f"|format(account.balance) }} {{ account.currency }}</div>
+                    <div class="account-description">{{ account.description or '' }}</div>
+                    <button type="button" class="delete-account-btn" data-id="{{ account.id }}" title="Удалить счет" onclick="deleteAccount(this)">
+    <i class="fas fa-times"></i>
+</button>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Кнопка добавления счета -->
+            <button type="button" class="btn form-input" id="addAccountBtn">
+    <i class="fas fa-plus"></i> Добавить счет
+</button>
+                    <h2><i class="fas fa-plus-circle"></i> Добавить операцию</h2>
+
                     <div class="form-row">
                         <div class="form-group">
+                            <label>Счет:</label>
+                            <div class="custom-select">
+                                <select name="account" required class="form-input">
+                                    <option value="">Выберите счет</option>
+                                    {% for account in accounts %}
+                                    <option value="{{ account.id }}">{{ account.name }} ({{ "%.2f"|format(account.balance) }} {{ account.currency }})</option>
+                                    {% endfor %}
+                                </select>
+                                <span class="select-arrow"><i class="fas fa-chevron-down"></i></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
                             <label>Тип:</label>
-                            <select name="type" required>
+                            <select name="type" required class="form-input">
                                 <option value="income">Доход</option>
                                 <option value="expense">Расход</option>
                             </select>
@@ -96,21 +73,20 @@
                         </div>
                     </div>
 
-                    <!-- Замените блок с выбором категории на этот: -->
-<div class="form-group">
-    <label for="categorySelect">Категория:</label>
-    <div class="custom-select">
-        <select id="categorySelect" name="category" required>
-            <option value="" disabled selected>Выберите категорию</option>
-            {% for cat in categories if cat['name'] != '+ Новая категория' %}
-            <option value="{{ cat['name'] }}" data-type="{{ cat['type'] }}">{{ cat['name'] }}</option>
-            {% endfor %}
-        </select>
-        <span class="select-arrow"><i class="fas fa-chevron-down"></i></span>
-    </div>
-</div>
-
                     <div class="form-row">
+                        <div class="form-group">
+                            <label>Категория:</label>
+                            <div class="custom-select">
+                                <select name="category" required class="form-input">
+                                    <option value="" disabled selected>Выберите категорию</option>
+                                    {% for cat in categories if cat['name'] != '+ Новая категория' %}
+                                    <option value="{{ cat['name'] }}" data-type="{{ cat['type'] }}">{{ cat['name'] }}</option>
+                                    {% endfor %}
+                                </select>
+                                <span class="select-arrow"><i class="fas fa-chevron-down"></i></span>
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <label>Дата:</label>
                             <input type="date" name="date" class="form-input">
@@ -121,25 +97,63 @@
                             <input type="text" name="description" class="form-input">
                         </div>
                     </div>
-                </div>
 
-                <div class="form-actions">
-                    <button type="submit" class="form-btn btn-primary" id="submitBtn">
-                        <i class="fas fa-save"></i> Добавить операцию
-                    </button>
-
-                    <div class="form-buttons-row">
-                        <button type="button" class="form-btn btn-secondary" id="historyToggle">
-                            <i class="fas fa-history"></i> История операций
+                    <div class="form-actions">
+                        <button type="submit" class="btn form-input" name="action" value="add_transaction">
+                            <i class="fas fa-save"></i> Добавить операцию
                         </button>
-                        <a href="{{ url_for('analytics') }}" class="form-btn btn-secondary">
-                            <i class="fas fa-chart-pie"></i> Аналитика
-                        </a>
                     </div>
-                </div>
-            </form>
+
+                    <!-- Кнопки аналитики и истории -->
+                    <div class="form-buttons-row">
+    <a href="{{ url_for('analytics') }}" class="btn btn-secondary form-input">
+        <i class="fas fa-chart-pie"></i> Аналитика
+    </a>
+    <a href="{{ url_for('history') }}" class="btn btn-secondary form-input">
+    <i class="fas fa-list"></i> История операций
+</a>
+</div>
+
+
+
+            <!-- Скрытые поля для действий -->
+            <input type="hidden" name="action" id="actionType" value="">
+            <input type="hidden" name="target_id" id="targetId" value="">
+        </form>
+
+        <!-- Модальное окно для счета -->
+        <div id="accountModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Добавить новый счет</h2>
+                <form onsubmit="event.preventDefault(); addAccount();">
+                    <div class="form-group">
+                        <label>Название счета:</label>
+                        <input type="text" id="accountName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Начальный баланс:</label>
+                        <input type="number" step="0.01" id="initialBalance" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Валюта:</label>
+                        <select id="accountCurrency">
+                            <option value="BYN">BYN</option>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="RUB">RUB</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Описание (необязательно):</label>
+                        <textarea id="accountDescription"></textarea>
+                    </div>
+                    <button type="submit" class="btn form-input">Сохранить</button>
+                </form>
+            </div>
         </div>
 
+        <!-- Flash-сообщения -->
         <div class="flash-container">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -148,50 +162,6 @@
                     {% endfor %}
                 {% endif %}
             {% endwith %}
-        </div>
-
-        <div id="transactionHistory" class="transaction-history">
-            <h2><i class="fas fa-list"></i> История операций</h2>
-            <!-- В таблице операций добавьте новую колонку -->
-<table>
-    <thead>
-        <tr>
-            <th>Дата</th>
-            <th>Сумма</th>
-            <th>Категория</th>
-            <th>Тип</th>
-            <th>Счет</th>
-            <th>Описание</th>
-            <th>Действия</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for t in transactions %}
-        <tr class="{{ t['type'] }}">
-            <td>{{ t['date'] }}</td>
-            <td>{{ t['amount'] }} BYN</td>
-            <td>{{ t['name'] }}</td>
-            <td>
-                {% if t['type'] == 'income' %}
-                    <i class="fas fa-arrow-up income"></i> Доход
-                {% else %}
-                    <i class="fas fa-arrow-down expense"></i> Расход
-                {% endif %}
-            </td>
-            <td>{{ t['account_name'] }}</td>
-            <td>{{ t['description'] or '' }}</td>
-            <td class="actions">
-                <a href="{{ url_for('edit_transaction', transaction_id=t['id']) }}" class="edit-btn">
-                    <i class="fas fa-edit"></i>
-                </a>
-                <button class="delete-btn" data-id="{{ t['id'] }}">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
         </div>
     </div>
 

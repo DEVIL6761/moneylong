@@ -469,11 +469,7 @@ select {
     gap: 15px;
 }
 
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
+
 
 /* Адаптивность */
 @media (max-width: 600px) {
@@ -768,7 +764,7 @@ a.btn-secondary:hover, button.btn-secondary:hover {
     margin-bottom: 30px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     width: 100%;
-    max-width: 500px;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
@@ -1004,6 +1000,368 @@ a.btn-secondary:hover, button.btn-secondary:hover {
     cursor: pointer;
 }
 
-.close:hover {
-    color: var(--secondary);
+
+
+
+
+
+
+
+
+
+
+
+
+
+.form-fields {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.form-actions {
+    margin-top: auto;
+}
+
+.form-buttons-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+
+
+
+
+
+
+
+
+/* Стили для карточек счетов */
+.account-card {
+    position: relative;
+    /* остальные стили карточки */
+}
+
+.delete-account-btn {
+    position: absolute;
+    top: 0px;
+    left: 120px;
+    background: none;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+/* Стили для истории операций */
+.history-table-container {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* Общие стили для формы */
+.form-row {
+    display: inline-flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.form-group {
+    flex: 1;
+}
+
+
+
+/* Стили для строки с кнопками */
+.form-buttons-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+
+
+
+
+
+/* Вторичные кнопки */
+.btn-secondary {
+    background: #3d484f;
+    color: var(--text);
+    border: 1px solid #4a5660;
+}
+
+
+
+/* Иконки в кнопках */
+.btn i {
+    margin-right: 8px;
+}
+
+
+
+
+/* Унификация внешнего вида всех input, select и кнопок */
+.form-input,
+select,
+.custom-select select,
+button.btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+}
+
+/* Стилизуем стрелку у кастомного select */
+.custom-select {
+    position: relative;
+}
+.custom-select select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 30px;
+}
+.select-arrow {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+/* Отступ между списком счетов и кнопкой */
+.accounts-list {
+    margin-bottom: 20px;
+}
+
+/* Кнопки действий в таблице */
+.actions button {
+    margin-right: 5px;
+}
+
+
+
+
+
+
+.form-input,
+select,
+.custom-select select,
+button.btn,
+a.btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    text-align: center;
+    text-decoration: none;
+    margin-bottom: 10px;
+}
+
+
+/* history.html specific styles */
+.history-container {
+    background: var(--light-dark);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+}
+
+.back-link {
+
+    margin-bottom: 20px;
+}
+.history-table-full {
+    width: 100%;
+    overflow: visible; /* Убедитесь, что overflow не установлен в auto или scroll */
+}
+
+.history-table-full table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+
+/* Добавьте в ваш style.css */
+.nav-link.active {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 5px 10px;
+}
+.nav-link {
+    min-width: 100px; /* или другая подходящая ширина */
+    text-align: center;
+    justify-content: center;
+}
+
+
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.nav-links {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    color: white;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    min-width: 100px;
+    justify-content: center;
+}
+
+.nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link.active {
+    background-color: #3498db;
+    font-weight: bold;
+    /* Те же параметры что и у обычного состояния */
+    padding: 0.5rem 1rem;
+}
+
+.nav-link.active {
+    background-color: #3498db;
+    font-weight: bold;
+}
+
+
+
+
+
+.account-card {
+    position: relative;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: box-shadow 0.3s ease;
+}
+
+.account-content {
+    flex-grow: 1;
+}
+
+.delete-account-btn {
+    background: none;
+    border: none;
+    color: #ff4444;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 5px 8px;
+    margin-left: 10px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.delete-account-btn:hover {
+    background-color: rgba(255, 68, 68, 0.1);
+    transform: scale(1.1);
+}
+
+.delete-account-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 68, 68, 0.3);
+}
+
+
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.delete-account-btn i {
+    display: inline-block;
+    animation: fadeIn 0.3s ease;
+}
+
+.account-card {
+    position: relative;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: box-shadow 0.3s ease;
+}
+
+.account-content {
+    flex-grow: 1;
+}
+
+.delete-account-btn {
+    background: transparent !important;
+    border: none !important;
+    color: #ff4444;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0;
+    margin-left: 120px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.delete-account-btn:hover {
+    color: #ff0000;
+    transform: scale(1.1);
+    background: transparent !important;
+}
+
+.delete-account-btn:focus,
+.delete-account-btn:active {
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+.delete-account-btn i {
+    pointer-events: none; /* Чтобы клик срабатывал именно на кнопке, а не на иконке */
 }

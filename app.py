@@ -148,7 +148,15 @@ def get_finance_data():
     """Get all finance data in one query to reduce database access"""
     with db_connection() as conn:
         transactions = pd.read_sql('''
-            SELECT t.*, c.name as category_name, a.name as account_name 
+            SELECT 
+                t.id,
+                t.amount,
+                c.name as category_name,
+                DATE(t.date) as date,
+                t.description,
+                t.type,
+                a.name as account_name,
+                a.id as account_id
             FROM transactions t
             JOIN categories c ON t.category_id = c.id
             JOIN accounts a ON t.account_id = a.id
@@ -183,55 +191,41 @@ def home():
 @handle_db_locks()
 def add_transaction_route():
     try:
-        # Get form data
         amount = float(request.form['amount'].replace(',', '.'))
         trans_type = request.form['type']
+        category_name = request.form['category']
         description = request.form.get('description', '')
         date_str = request.form.get('date')
+
+        # Get account_id from form and validate it
         account_id = request.form.get('account')
+        if not account_id:
+            flash('Необходимо выбрать счет!', 'danger')
+            return redirect(url_for('home'))
+
+        try:
+            account_id = int(account_id)
+        except (ValueError, TypeError):
+            flash('Некорректный идентификатор счета!', 'danger')
+            return redirect(url_for('home'))
 
         with db_connection() as conn:
             cursor = conn.cursor()
 
-            # Handle category
-            if request.form['category'] == '__new__':
-                category = request.form.get('new_category', '').strip()
-                category_type = request.form.get('new_category_type', 'expense')
-
-                if not category:
-                    flash('Необходимо указать название категории!', 'danger')
-                    return redirect(url_for('home'))
-
-                try:
-                    cursor.execute('INSERT INTO categories (name, type) VALUES (?, ?)', (category, category_type))
-                    conn.commit()
-                except sqlite3.IntegrityError:
-                    flash('Категория уже существует!', 'warning')
-                    return redirect(url_for('home'))
-            else:
-                category = request.form['category']
-
-            # Get category ID
-            cursor.execute('SELECT id FROM categories WHERE name = ?', (category,))
-            category_id = cursor.fetchone()
-            if not category_id:
-                flash('Выбранная категория не найдена!', 'danger')
-                return redirect(url_for('home'))
-
-            # Handle account
-            if not account_id:
-                cursor.execute('SELECT id FROM accounts LIMIT 1')
-                account_result = cursor.fetchone()
-                if not account_result:
-                    flash('Необходимо создать хотя бы один счет!', 'danger')
-                    return redirect(url_for('home'))
-                account_id = account_result[0]
-
-            # Check account exists
+            # Verify account exists
             cursor.execute('SELECT id FROM accounts WHERE id = ?', (account_id,))
             if not cursor.fetchone():
                 flash('Выбранный счет не существует!', 'danger')
                 return redirect(url_for('home'))
+
+            # Get category ID
+            cursor.execute('SELECT id FROM categories WHERE name = ? AND type = ?',
+                           (category_name, trans_type))
+            category_result = cursor.fetchone()
+            if not category_result:
+                flash('Выбранная категория не существует или не соответствует типу операции!', 'danger')
+                return redirect(url_for('home'))
+            category_id = category_result[0]
 
             # Prepare date
             date_obj = datetime.strptime(date_str, '%Y-%m-%d') if date_str else None
@@ -242,7 +236,7 @@ def add_transaction_route():
             cursor.execute('''
                 INSERT INTO transactions (amount, category_id, date, description, type, account_id)
                 VALUES (?, ?, ?, ?, ?, ?)
-            ''', (amount, category_id[0], date_str_db, description, trans_type, account_id))
+            ''', (amount, category_id, date_str_db, description, trans_type, account_id))
 
             # Update account balance
             if trans_type == 'income':
@@ -288,6 +282,42 @@ def add_account():
 
     return redirect(url_for('home'))
 
+
+@app.route('/delete_account/<int:account_id>', methods=['DELETE'])
+@handle_db_locks()
+def delete_account(account_id):
+    try:
+        with db_connection() as conn:
+            cursor = conn.cursor()
+
+            # Проверяем, есть ли транзакции на этом счету
+            cursor.execute('SELECT COUNT(*) FROM transactions WHERE account_id = ?', (account_id,))
+            transaction_count = cursor.fetchone()[0]
+
+            if transaction_count > 0:
+                # Переносим транзакции на другой счет или удаляем
+                # Здесь можно либо:
+                # 1. Удалить все связанные транзакции
+                # 2. Перенести их на другой счет
+
+                # Вариант 1: Удаление транзакций
+                cursor.execute('DELETE FROM transactions WHERE account_id = ?', (account_id,))
+
+                # Или вариант 2: Перенос на другой счет
+                # cursor.execute('SELECT id FROM accounts WHERE id != ? LIMIT 1', (account_id,))
+                # new_account = cursor.fetchone()
+                # if new_account:
+                #     cursor.execute('UPDATE transactions SET account_id = ? WHERE account_id = ?',
+                #                  (new_account[0], account_id))
+
+            # Удаляем сам счет
+            cursor.execute('DELETE FROM accounts WHERE id = ?', (account_id,))
+            conn.commit()
+
+            return jsonify({'success': True}), 200
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/add_category', methods=['POST'])
 @handle_db_locks()
@@ -527,11 +557,20 @@ def edit_transaction(transaction_id):
 
                 # 4. Проверяем существование счета
                 account_id = form.get('account')
-                if account_id:
+                if account_id is not None:
+                    try:
+                        account_id = int(account_id)
+                    except ValueError:
+                        flash('Некорректный идентификатор счета', 'danger')
+                        return redirect(url_for('edit_transaction', transaction_id=transaction_id))
+
                     cursor.execute('SELECT 1 FROM accounts WHERE id = ?', (account_id,))
                     if not cursor.fetchone():
                         flash('Указанный счет не существует', 'danger')
                         return redirect(url_for('edit_transaction', transaction_id=transaction_id))
+                else:
+                    flash('Не выбран счет', 'danger')
+                    return redirect(url_for('edit_transaction', transaction_id=transaction_id))
 
                 # 5. Подготавливаем дату (без времени)
                 date_value = form.get('date') or datetime.now().strftime('%Y-%m-%d')
@@ -603,6 +642,16 @@ def format_month(value):
         return f"{month_names.get(month, month)} {year}"
     except Exception:
         return value
+
+@app.route('/history')
+@handle_db_locks()
+def history():
+    try:
+        data = get_finance_data()
+        return render_template('history.html', **data)
+    except Exception as e:
+        app.logger.error(f"Error in history route: {str(e)}")
+        return render_template('error.html', error=str(e)), 500
 
 
 if __name__ == '__main__':

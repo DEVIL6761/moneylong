@@ -35,11 +35,53 @@ class FinanceApp:
                     continue
                 raise
 
-    def get_transactions(self):
-        conn = sqlite3.connect(self.db_name)
-        df = pd.read_sql('SELECT * FROM transactions', conn)
-        conn.close()
-        return df
+    def get_transactions(self, period='all', trans_type=None):
+        conn = sqlite3.connect(self.db_name, timeout=20)
+        try:
+            conn.execute("PRAGMA journal_mode=WAL")
+            cursor = conn.cursor()
+
+            query = '''
+            SELECT 
+                t.id, 
+                t.amount, 
+                c.name as category_name,
+                DATE(t.date) as date,
+                t.description, 
+                t.type,
+                a.name as account_name
+            FROM transactions t 
+            JOIN categories c ON t.category_id = c.id
+            JOIN accounts a ON t.account_id = a.id
+            '''
+            params = []
+            conditions = []
+
+            if trans_type:
+                conditions.append('t.type = ?')
+                params.append(trans_type)
+
+            if period != 'all':
+                if period == 'day':
+                    conditions.append("date(t.date) = date('now')")
+                elif period == 'week':
+                    conditions.append("date(t.date) >= date('now', '-7 days')")
+                elif period == 'month':
+                    conditions.append("strftime('%Y-%m', t.date) = strftime('%Y-%m', 'now')")
+
+            if conditions:
+                query += ' WHERE ' + ' AND '.join(conditions)
+
+            query += ' ORDER BY t.date DESC'
+
+            cursor.execute(query, params) if params else cursor.execute(query)
+            columns = [column[0] for column in cursor.description]
+            data = cursor.fetchall()
+
+            return pd.DataFrame(data, columns=columns) if data else pd.DataFrame(columns=columns)
+
+        finally:
+            conn.close()
 
     def add_transaction(self, amount, category_name, trans_type, date=None, description=None, account_id=None):
         try:

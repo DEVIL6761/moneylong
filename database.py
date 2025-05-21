@@ -3,15 +3,15 @@ import os
 
 
 def init_db():
-    conn = sqlite3.connect('finance.db', timeout=20)
+    conn = sqlite3.connect('finance.db')
     cursor = conn.cursor()
 
-    # Оптимальные настройки для многопользовательского доступа
-    cursor.execute("PRAGMA journal_mode=WAL")  # Режим Write-Ahead Logging
-    cursor.execute("PRAGMA synchronous=NORMAL")  # Баланс между безопасностью и производительностью
-    cursor.execute("PRAGMA busy_timeout=30000")  # Увеличиваем таймаут до 30 секунд
+    # Ваши SQLite-специфичные настройки
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA synchronous=NORMAL")
+    cursor.execute("PRAGMA foreign_keys=ON")
 
-    # Создаем таблицы с явным указанием внешних ключей
+    # Создание таблиц
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS accounts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
