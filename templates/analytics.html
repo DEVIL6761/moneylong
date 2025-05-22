@@ -14,12 +14,13 @@
     </form>
 
     <!-- Секция с гистограммой - теперь первой -->
-    <div class="analytics-section full-width-bar">
-        <h2>Движение средств по дням — {{ selected_month | format_month }}</h2>
-        <div style="width: 68vw; height: 500px; margin-center: calc(-50vw + 50%);">
-            <canvas id="dailyChart" style="width: 100% !important; height: 100% !important;"></canvas>
-        </div>
+    <div class="analytics-section">
+    <h2>Движение средств по дням — {{ selected_month | format_month }}</h2>
+    <div style="width: 100%; max-width: 1000px; height: 500px; margin: 0 auto;">
+        <canvas id="dailyChart" style="width: 100%; height: 100%;"></canvas>
     </div>
+</div>
+
 
     <!-- Остальные секции -->
     <div class="analytics-section">
@@ -48,149 +49,185 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const textColor = '#dfe6e9';
-        const selectedMonth = '{{ selected_month }}';
-        const monthNames = {
-            '01': 'январь', '02': 'февраль', '03': 'март', '04': 'апрель',
-            '05': 'май', '06': 'июнь', '07': 'июль', '08': 'август',
-            '09': 'сентябрь', '10': 'октябрь', '11': 'ноябрь', '12': 'декабрь'
+    document.addEventListener('DOMContentLoaded', function () {
+    const textColor = '#dfe6e9';
+    const selectedMonth = '{{ selected_month }}';  // формат YYYY-MM
+    const dailyStats = {{ daily_stats | tojson }};
+    const expenseStats = {{ expense_stats | tojson }};
+    const incomeStats = {{ income_stats | tojson }};
+
+    const monthNames = {
+        '01': 'январь', '02': 'февраль', '03': 'март', '04': 'апрель',
+        '05': 'май', '06': 'июнь', '07': 'июль', '08': 'август',
+        '09': 'сентябрь', '10': 'октябрь', '11': 'ноябрь', '12': 'декабрь'
+    };
+
+    // ========== Вспомогательные функции ==========
+    function generateDaysArray(year, month) {
+        const days = [];
+        const date = new Date(year, month - 1, 1);
+        while (date.getMonth() === month - 1) {
+            days.push(date.getDate().toString());
+            date.setDate(date.getDate() + 1);
+        }
+        return days;
+    }
+
+    function getValueForDay(day, type) {
+        const entry = dailyStats.find(e => e.day === day);
+        if (!entry) return 0;
+        return entry[type] || 0;
+    }
+
+    function createPieChart(canvasId, data, title) {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+
+        const chartData = {
+            labels: data.map(item => item.name),
+            datasets: [{
+                data: data.map(item => item.total),
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                    '#9966FF', '#FF9F40', '#8AC24A', '#607D8B'
+                ],
+                borderWidth: 1
+            }]
         };
 
-        // Форматирование даты (апрель 2025)
-        function formatMonthYear(dateStr) {
-            const [year, month] = dateStr.split('-');
-            return `${monthNames[month]} ${year}`;
+        const total = data.reduce((sum, item) => sum + item.total, 0);
+        const totalContainer = document.getElementById(canvasId.replace('Chart', 'Total'));
+        if (totalContainer) {
+            totalContainer.textContent = `${total.toFixed(2)} BYN`;
         }
 
-        // ================= DAILY BAR CHART =================
-        const dailyCtx = document.getElementById('dailyChart');
-        if (dailyCtx) {
-            const dailyData = {
-                labels: {{ daily_stats | map(attribute='day') | list | tojson }},
-                income: {{ daily_stats | map(attribute='income') | list | tojson }},
-                expense: {{ daily_stats | map(attribute='expense') | list | tojson }}
-            };
-
-            new Chart(dailyCtx, {
-                type: 'bar',
-                data: {
-                    labels: dailyData.labels,
-                    datasets: [
-                        {
-                            label: 'Доходы',
-                            data: dailyData.income,
-                            backgroundColor: '#00b894',
-                            borderColor: '#00b894',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Расходы',
-                            data: dailyData.expense.map(x => -x),
-                            backgroundColor: '#d63031',
-                            borderColor: '#d63031',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            ticks: { color: textColor },
-                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                        },
-                        y: {
-                            ticks: {
-                                color: textColor,
-                                callback: value => Math.abs(value) + ' BYN'
-                            },
-                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: textColor
                         }
                     },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: textColor,
-                                filter: item => item.text.includes('Доходы') || item.text.includes('Расходы')
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: ctx => {
-                                    const label = ctx.dataset.label.split(' (')[0];
-                                    return `${label}: ${Math.abs(ctx.raw).toFixed(2)} BYN`;
-                                }
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                const value = ctx.raw;
+                                const percentage = (value / total * 100).toFixed(1);
+                                return `${ctx.label}: ${value.toFixed(2)} BYN (${percentage}%)`;
                             }
                         }
                     }
                 }
-            });
+            }
+        });
+    }
+
+    // ========== Гистограмма по дням ==========
+    const [year, month] = selectedMonth.split('-');
+    const allDays = generateDaysArray(parseInt(year), parseInt(month));
+    const incomeData = allDays.map(day => getValueForDay(day, 'income'));
+    const expenseData = allDays.map(day => getValueForDay(day, 'expense'));
+
+    const dailyCtx = document.getElementById('dailyChart');
+if (dailyCtx) {
+    const textColor = '#dfe6e9';
+    const selectedMonth = '{{ selected_month }}';
+
+    // Генерация всех дней месяца
+    function generateAllDays(monthStr) {
+        const [year, month] = monthStr.split('-').map(Number);
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const allDays = [];
+        for (let day = 1; day <= daysInMonth; day++) {
+            allDays.push(String(day).padStart(2, '0'));
         }
+        return allDays;
+    }
 
-        // ================= PIE CHARTS =================
-        function createPieChart(canvasId, data, title) {
-            const ctx = document.getElementById(canvasId);
-            if (!ctx) return;
+    const allDays = generateAllDays(selectedMonth);
+    const rawData = {{ daily_stats | tojson }};
+    const incomeMap = {}, expenseMap = {};
 
-            const chartData = {
-                labels: data.map(item => item.name),
-                datasets: [{
-                    data: data.map(item => item.total),
-                    backgroundColor: [
-                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
-                        '#9966FF', '#FF9F40', '#8AC24A', '#607D8B'
-                    ],
-                    borderWidth: 1
-                }]
-            };
-
-            const total = data.reduce((sum, item) => sum + item.total, 0);
-            document.getElementById(canvasId.replace('Chart', 'Total')).textContent =
-                `${total.toFixed(2)} BYN`;
-
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: chartData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                color: textColor,
-                                filter: (item, data) => true // Показываем все элементы легенды для круговых диаграмм
-                            }
-                        },
-
-                        tooltip: {
-                            callbacks: {
-                                label: ctx => {
-                                    const value = ctx.raw;
-                                    const percentage = (value / total * 100).toFixed(1);
-                                    return `${ctx.label}: ${value.toFixed(2)} BYN (${percentage}%)`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        createPieChart(
-            'expenseChart',
-            {{ expense_stats | tojson }},
-            `Расходы по категориям`
-        );
-
-        createPieChart(
-            'incomeChart',
-            {{ income_stats | tojson }},
-            `Доходы по категориям`
-        );
+    rawData.forEach(item => {
+        incomeMap[item.day] = item.income;
+        expenseMap[item.day] = item.expense;
     });
+
+    const incomeData = allDays.map(day => incomeMap[day] || 0);
+    const expenseData = allDays.map(day => expenseMap[day] || 0);
+
+    new Chart(dailyCtx, {
+        type: 'bar',
+        data: {
+            labels: allDays,
+            datasets: [
+                {
+                    label: 'Доходы',
+                    data: incomeData,
+                    backgroundColor: '#00b894',
+                    borderColor: '#00b894',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Расходы',
+                    data: expenseData.map(x => -x),
+                    backgroundColor: '#d63031',
+                    borderColor: '#d63031',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    labels: {
+                        color: textColor
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            const label = ctx.dataset.label;
+                            return `${label}: ${Math.abs(ctx.raw).toFixed(2)} BYN`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: textColor },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
+                },
+                y: {
+                    ticks: {
+                        color: textColor,
+                        callback: value => Math.abs(value) + ' BYN'
+                    },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
+                }
+            }
+        }
+    });
+}
+
+    // ========== Круговые диаграммы ==========
+    createPieChart('expenseChart', expenseStats, 'Расходы по категориям');
+    createPieChart('incomeChart', incomeStats, 'Доходы по категориям');
+});
+
+
 </script>
 {% endblock %}

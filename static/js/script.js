@@ -289,3 +289,102 @@ document.querySelector('form').addEventListener('submit', function(e) {
             }
         });
     });
+
+
+
+// В вашем script.js или в теге <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Элементы модального окна категории
+    const categoryModal = document.getElementById('categoryModal');
+    const categoryBtn = document.getElementById('categorySelect');
+    const categorySpan = categoryModal.querySelector('.close');
+    const categoryForm = document.getElementById('categoryForm');
+
+    // Открытие модального окна при выборе "+ Новая категория"
+    document.getElementById('categorySelect').addEventListener('change', function() {
+        if (this.value === '+new_category') {
+            // Устанавливаем тип категории в соответствии с выбранным типом операции
+            const transactionType = document.querySelector('select[name="type"]').value;
+            document.getElementById('categoryType').value = transactionType;
+
+            categoryModal.style.display = 'block';
+            this.selectedIndex = 0; // Сбрасываем выбор
+        }
+    });
+
+    // Закрытие модального окна
+    categorySpan.onclick = function() {
+        categoryModal.style.display = 'none';
+    }
+
+    // Обработка отправки формы категории
+    categoryForm.onsubmit = function(e) {
+        e.preventDefault();
+        const name = document.getElementById('categoryName').value;
+        const type = document.getElementById('categoryType').value;
+
+        // Отправка данных на сервер
+        fetch('/add_category', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `name=${encodeURIComponent(name)}&type=${encodeURIComponent(type)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Добавляем новую категорию в select
+                const select = document.getElementById('categorySelect');
+                const newOption = new Option(name, name);
+                newOption.dataset.type = type;
+
+                // Вставляем перед последним элементом (кнопка добавления)
+                select.insertBefore(newOption, select.lastChild);
+                select.value = name;
+
+                categoryModal.style.display = 'none';
+                categoryForm.reset();
+
+                // Показываем уведомление
+                showFlashMessage('Категория успешно добавлена', 'success');
+            } else {
+                showFlashMessage(data.error || 'Ошибка при добавлении категории', 'danger');
+            }
+        })
+        .catch(error => {
+            showFlashMessage('Ошибка сети: ' + error, 'danger');
+        });
+    }
+
+    // Синхронизация типа операции с типом категории
+    document.querySelector('select[name="type"]').addEventListener('change', function() {
+        const type = this.value;
+        const categorySelect = document.getElementById('categorySelect');
+
+        // Фильтруем категории по типу
+        Array.from(categorySelect.options).forEach(option => {
+            if (option.value && option.value !== '+new_category') {
+                option.style.display = (option.dataset.type === type || !option.dataset.type) ? '' : 'none';
+            }
+        });
+
+        // Сбрасываем выбор, если текущая категория не подходит
+        if (categorySelect.selectedOptions[0].dataset.type &&
+            categorySelect.selectedOptions[0].dataset.type !== type) {
+            categorySelect.selectedIndex = 0;
+        }
+    });
+});
+
+function showFlashMessage(message, type) {
+    const flashContainer = document.querySelector('.flash-container');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `flash-message ${type}`;
+    messageDiv.textContent = message;
+    flashContainer.appendChild(messageDiv);
+
+    setTimeout(() => {
+        messageDiv.remove();
+    }, 5000);
+});

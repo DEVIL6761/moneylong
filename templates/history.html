@@ -61,9 +61,10 @@
                             <td>{{ t['account_name'] }}</td>
                             <td>{{ t['description'] or '' }}</td>
                             <td class="actions">
-                                <button type="button" class="edit-btn" onclick="editTransaction('{{ t['id'] }}')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
+                                <a href="{{ url_for('edit_transaction', transaction_id=t['id']) }}" class="edit-btn">
+    <i class="fas fa-edit"></i>
+</a>
+
                                 <button type="button" class="delete-btn" onclick="deleteTransaction('{{ t['id'] }}')">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -75,6 +76,23 @@
             </div>
         </div>
     </div>
+<script>
+function deleteTransaction(id) {
+    if (confirm("Вы уверены, что хотите удалить транзакцию?")) {
+        fetch(`/delete_transaction/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + (data.error || 'не удалось удалить'));
+            }
+        });
+    }
+}
+</script>
 
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>

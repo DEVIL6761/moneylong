@@ -191,6 +191,12 @@ def home():
 @handle_db_locks()
 def add_transaction_route():
     try:
+        if not request.form:
+            app.logger.error("No form data received")
+            flash('No form data received', 'danger')
+            return redirect(url_for('home'))
+
+        app.logger.debug(f"Form data: {request.form}")
         amount = float(request.form['amount'].replace(',', '.'))
         trans_type = request.form['type']
         category_name = request.form['category']
@@ -330,15 +336,13 @@ def add_category_route():
             try:
                 conn.execute('INSERT INTO categories (name, type) VALUES (?, ?)', (name, trans_type))
                 conn.commit()
-                flash('Категория добавлена!', 'success')
+                return jsonify({'success': True, 'message': 'Категория добавлена!'})
             except sqlite3.IntegrityError:
-                flash('Категория уже существует!', 'warning')
+                return jsonify({'success': False, 'error': 'Категория уже существует!'}), 400
 
     except Exception as e:
-        flash(f'Ошибка: {str(e)}', 'danger')
         app.logger.error(f"Error in add_category: {str(e)}")
-
-    return redirect(url_for('home'))
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/analytics')
@@ -472,12 +476,14 @@ def edit_transaction(transaction_id):
                 transaction_data = transaction.iloc[0].to_dict()
 
                 # Получаем все категории для выпадающего списка
+                selected_type = request.args.get('type') or transaction_data['type']
+
                 categories = pd.read_sql('''
                     SELECT id, name, type 
                     FROM categories 
                     WHERE type = ?
                     ORDER BY name
-                ''', conn, params=(transaction_data['type'],))
+                ''', conn, params=(selected_type,))
 
                 # Получаем все счета для выпадающего списка
                 accounts = pd.read_sql('''
@@ -491,8 +497,10 @@ def edit_transaction(transaction_id):
                     transaction=transaction_data,
                     categories=categories.to_dict('records'),
                     accounts=accounts.to_dict('records'),
-                    transaction_id=transaction_id
+                    transaction_id=transaction_id,
+                    selected_type=selected_type
                 )
+
 
         elif request.method == 'POST':
             # Обработка сохранения изменений
@@ -540,7 +548,7 @@ def edit_transaction(transaction_id):
                 cursor.execute('''
                     SELECT id, type 
                     FROM categories 
-                    WHERE name = ?
+                    WHERE id = ?
                 ''', (form['category'],))
                 category_data = cursor.fetchone()
 
@@ -627,6 +635,69 @@ def edit_transaction(transaction_id):
         flash('Неизвестная ошибка при обработке транзакции', 'danger')
         app.logger.error(f'Unexpected error in edit_transaction: {str(e)}', exc_info=True)
         return redirect(url_for('home'))
+
+        # Получаем транзакцию
+        cursor.execute('''
+                SELECT t.*, c.name as category_name
+                FROM transactions t
+                JOIN categories c ON t.category_id = c.id
+                WHERE t.id = ?
+            ''', (transaction_id,))
+        row = cursor.fetchone()
+
+        if not row:
+            flash('Транзакция не найдена', 'danger')
+            return redirect(url_for('home'))
+
+        # Формируем объект транзакции
+        columns = [column[0] for column in cursor.description]
+        transaction = dict(zip(columns, row))
+
+        # Обработка POST
+        if request.method == 'POST':
+            try:
+                amount = float(request.form['amount'].replace(',', '.'))
+                trans_type = request.form['type']
+                category_name = request.form['category']
+                description = request.form.get('description', '')
+                date_str = request.form.get('date')
+                account_id = int(request.form['account'])
+
+                cursor.execute('SELECT id FROM categories WHERE name = ? AND type = ?', (category_name, trans_type))
+                cat_result = cursor.fetchone()
+                if not cat_result:
+                    flash('Категория не найдена', 'danger')
+                    return redirect(url_for('edit_transaction', transaction_id=transaction_id))
+
+                category_id = cat_result[0]
+
+                # Обновляем транзакцию
+                cursor.execute('''
+                        UPDATE transactions
+                        SET amount = ?, type = ?, category_id = ?, date = ?, description = ?, account_id = ?
+                        WHERE id = ?
+                    ''', (amount, trans_type, category_id, date_str, description, account_id, transaction_id))
+
+                conn.commit()
+                flash('Транзакция обновлена', 'success')
+                return redirect(url_for('home'))
+            except Exception as e:
+                flash(f'Ошибка при обновлении: {e}', 'danger')
+
+        # Получаем категории и счета
+        cursor.execute('SELECT * FROM categories')
+        categories = [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
+
+        cursor.execute('SELECT * FROM accounts')
+        accounts = [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
+
+        return render_template(
+            'edit_transaction.html',
+            transaction=transaction,
+            transaction_id=transaction_id,
+            categories=categories,
+            accounts=accounts
+        )
 
 
 # Template filter
